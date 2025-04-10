@@ -19,6 +19,8 @@ class TimerViewModel: ObservableObject {
     private let defaultLongBreakTime: Int = 15 * 60
     private let defaultSessionsUntilLongBreak: Int = 4
     
+    private var cancellables = Set<AnyCancellable>()
+    
     init() {
         // Request notification permissions when the app starts
         NotificationService.shared.requestAuthorization()
@@ -30,31 +32,38 @@ class TimerViewModel: ObservableObject {
     }
     
     private func setupConfigObserver() {
-        // Create a publisher that combines all configuration changes
-        let workTimePublisher = NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
-            .map { _ in UserDefaults.standard.double(forKey: "workTime") }
+        // Create a publisher that only triggers for timer duration changes
+        let _: () = NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
+            .compactMap { notification -> (String, Double)? in
+                guard let key = notification.userInfo?["key"] as? String,
+                      let value = UserDefaults.standard.object(forKey: key) as? Double,
+                      ["workTime", "shortBreakTime", "longBreakTime"].contains(key) else {
+                    return nil
+                }
+                return (key, value)
+            }
+            .receive(on: DispatchQueue.main)
+            .debounce(for: .seconds(0.5), scheduler: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.handleConfigChange()
+            }
+            .store(in: &cancellables)
         
-        let shortBreakTimePublisher = NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
-            .map { _ in UserDefaults.standard.double(forKey: "shortBreakTime") }
-        
-        let longBreakTimePublisher = NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
-            .map { _ in UserDefaults.standard.double(forKey: "longBreakTime") }
-        
-        let sessionsUntilLongBreakPublisher = NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
-            .map { _ in UserDefaults.standard.integer(forKey: "sessionsUntilLongBreak") }
-        
-        // Combine all publishers
-        configObserver = Publishers.CombineLatest4(
-            workTimePublisher,
-            shortBreakTimePublisher,
-            longBreakTimePublisher,
-            sessionsUntilLongBreakPublisher
-        )
-        .receive(on: DispatchQueue.main)
-        .debounce(for: .seconds(0.5), scheduler: DispatchQueue.main)
-        .sink { [weak self] _ in
-            self?.handleConfigChange()
-        }
+        // Observe sessions until long break separately
+        NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
+            .compactMap { notification -> Int? in
+                guard let key = notification.userInfo?["key"] as? String,
+                      key == "sessionsUntilLongBreak",
+                      let value = UserDefaults.standard.object(forKey: key) as? Int else {
+                    return nil
+                }
+                return value
+            }
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.handleSessionsConfigChange()
+            }
+            .store(in: &cancellables)
     }
     
     private func handleConfigChange() {
@@ -71,6 +80,13 @@ class TimerViewModel: ObservableObject {
                 }
         } else {
             // If timer is not running, update immediately
+            updateTimerWithNewConfig()
+        }
+    }
+    
+    private func handleSessionsConfigChange() {
+        // Only update the configuration without showing a message
+        if !isRunning {
             updateTimerWithNewConfig()
         }
     }
