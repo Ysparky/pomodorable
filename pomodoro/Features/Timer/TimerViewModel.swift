@@ -299,10 +299,16 @@ class TimerViewModel: ObservableObject {
             timeRemaining = newTimeRemainingInt
             updateProgress()
             
-            // If we reach zero, switch mode
+            // If we reach zero, switch mode and send notification if user is not viewing timer tab
             if timeRemaining <= 0 {
                 pauseTimer()
                 accumulatedTime = 0
+                
+                // Check if app is in foreground but user is on a different tab
+                if UIApplication.shared.applicationState == .active && !isCurrentlyViewingTimerTab() {
+                    NotificationService.shared.scheduleNotification(for: isWorkMode ? .work : .break_)
+                }
+                
                 switchMode()
             }
         }
@@ -337,7 +343,10 @@ class TimerViewModel: ObservableObject {
                 }
             }
             
-            NotificationService.shared.scheduleNotification(for: .work)
+            // Only send notification if user is not viewing timer tab or app is in background
+            if UIApplication.shared.applicationState == .background || !isCurrentlyViewingTimerTab() {
+                NotificationService.shared.scheduleNotification(for: .work)
+            }
         } else {
             // Record completed break session (we don't count breaks in completedSessions)
             if let startTime = sessionStartTime {
@@ -355,7 +364,10 @@ class TimerViewModel: ObservableObject {
                 }
             }
             
-            NotificationService.shared.scheduleNotification(for: .break_)
+            // Only send notification if user is not viewing timer tab or app is in background
+            if UIApplication.shared.applicationState == .background || !isCurrentlyViewingTimerTab() {
+                NotificationService.shared.scheduleNotification(for: .break_)
+            }
         }
         
         isWorkMode.toggle()
@@ -404,5 +416,11 @@ class TimerViewModel: ObservableObject {
         // Get today's sessions and update the counter
         let todaySessions = HistoryService.shared.getSessionsForCurrentDay()
         completedSessions = todaySessions.filter({ $0.isCompleted }).count
+    }
+    
+    // Helper to check if the timer tab is the current active tab
+    private func isCurrentlyViewingTimerTab() -> Bool {
+        // Using a UserDefaults flag set by ContentView to track active tab
+        return UserDefaults.standard.integer(forKey: "active_tab") == 0 // 0 is timer tab
     }
 } 

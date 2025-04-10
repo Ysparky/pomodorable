@@ -1,13 +1,18 @@
 import Foundation
 import UserNotifications
 
+enum TimerMode {
+    case work
+    case break_
+}
+
 class NotificationService {
     static let shared = NotificationService()
     
     private init() {}
     
     func requestAuthorization() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, error in
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
             if granted {
                 print("Notificación autorizada")
             } else if let error = error {
@@ -29,10 +34,15 @@ class NotificationService {
             content.sound = .default
         }
         
+        // For in-app notifications when in different tab (foreground), deliver immediately
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
         let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
         
-        UNUserNotificationCenter.current().add(request)
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("Error al programar notificación: \(error.localizedDescription)")
+            }
+        }
     }
     
     // Function to schedule a notification that will trigger when the timer ends
@@ -63,16 +73,15 @@ class NotificationService {
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: TimeInterval(timeRemaining), repeats: false)
         let request = UNNotificationRequest(identifier: "timerEndNotification", content: content, trigger: trigger)
         
-        UNUserNotificationCenter.current().add(request)
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("Error al programar notificación: \(error.localizedDescription)")
+            }
+        }
     }
     
     // Cancel scheduled timer notifications
     func cancelPendingTimerNotifications() {
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["timerEndNotification"])
     }
-}
-
-enum TimerMode {
-    case work
-    case break_
 } 

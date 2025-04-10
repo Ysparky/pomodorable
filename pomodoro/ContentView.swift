@@ -32,9 +32,16 @@ struct ContentView: View {
             }
             .tag(2)
         }
+        .onAppear {
+            // Set initial active tab
+            UserDefaults.standard.set(selectedTab, forKey: "active_tab")
+        }
     }
     
     private func tabChanged(to index: Int) {
+        // Save the current tab index to UserDefaults
+        UserDefaults.standard.set(index, forKey: "active_tab")
+        
         if index == 1 { // History tab
             NotificationCenter.default.post(name: .historyTabSelected, object: nil)
         }
