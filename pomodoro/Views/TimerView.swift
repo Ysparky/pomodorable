@@ -1,0 +1,53 @@
+import SwiftUI
+
+struct TimerView: View {
+    @StateObject private var viewModel = TimerViewModel()
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            // Timer Display
+            ZStack {
+                Circle()
+                    .stroke(lineWidth: 20)
+                    .opacity(0.3)
+                    .foregroundColor(.gray)
+                
+                Circle()
+                    .trim(from: 0.0, to: viewModel.progress)
+                    .stroke(style: StrokeStyle(lineWidth: 20, lineCap: .round, lineJoin: .round))
+                    .foregroundColor(viewModel.isWorkMode ? .red : .green)
+                    .rotationEffect(Angle(degrees: 270.0))
+                    .animation(.linear, value: viewModel.progress)
+                
+                VStack {
+                    Text(viewModel.timeString)
+                        .font(.system(size: 60, weight: .bold, design: .rounded))
+                    Text(viewModel.modeText)
+                        .font(.title2)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .frame(width: 300, height: 300)
+            .padding()
+            
+            // Control Buttons
+            HStack(spacing: 30) {
+                Button(action: viewModel.resetTimer) {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.title)
+                }
+                
+                Button(action: viewModel.toggleTimer) {
+                    Image(systemName: viewModel.isRunning ? "pause.fill" : "play.fill")
+                        .font(.title)
+                }
+            }
+            .foregroundColor(.primary)
+        }
+        .padding()
+    }
+}
+
+#Preview {
+    TimerView()
+} 
