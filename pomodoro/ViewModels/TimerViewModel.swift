@@ -6,11 +6,17 @@ class TimerViewModel: ObservableObject {
     @Published var isRunning: Bool = false
     @Published var isWorkMode: Bool = true
     @Published var progress: Double = 1.0
+    @Published var completedSessions: Int = 0
     
     private var timer: AnyCancellable?
     private let workTime: Int = 25 * 60
     private let shortBreakTime: Int = 5 * 60
     private let longBreakTime: Int = 15 * 60
+    
+    init() {
+        // Request notification permissions when the app starts
+        NotificationService.shared.requestAuthorization()
+    }
     
     var timeString: String {
         let minutes = timeRemaining / 60
@@ -58,9 +64,15 @@ class TimerViewModel: ObservableObject {
     }
     
     private func switchMode() {
+        if isWorkMode {
+            completedSessions += 1
+            NotificationService.shared.scheduleNotification(for: .break_)
+        } else {
+            NotificationService.shared.scheduleNotification(for: .work)
+        }
+        
         isWorkMode.toggle()
         timeRemaining = isWorkMode ? workTime : shortBreakTime
         progress = 1.0
-        // TODO: Add notification when mode changes
     }
 } 

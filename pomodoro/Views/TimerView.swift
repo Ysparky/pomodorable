@@ -5,6 +5,11 @@ struct TimerView: View {
     
     var body: some View {
         VStack(spacing: 20) {
+            // Session Counter
+            Text("Sesiones completadas: \(viewModel.completedSessions)")
+                .font(.headline)
+                .foregroundColor(.secondary)
+            
             // Timer Display
             ZStack {
                 Circle()
