@@ -37,6 +37,24 @@ struct ContentView: View {
             if let savedTab = UserDefaults.standard.object(forKey: "selectedTab") as? Int {
                 selectedTab = savedTab
             }
+            
+            // Observe notifications to switch to timer tab
+            setupNotificationObservers()
+        }
+    }
+    
+    private func setupNotificationObservers() {
+        // Remove any existing observers to avoid duplicates
+        NotificationCenter.default.removeObserver(self)
+        
+        // Add observer for notification to switch to timer tab
+        NotificationCenter.default.addObserver(
+            forName: .switchToTimerTab,
+            object: nil,
+            queue: .main
+        ) { _ in
+            // Switch to timer tab
+            self.selectedTab = 0
         }
     }
     

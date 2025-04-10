@@ -525,4 +525,5 @@ class HistoryViewModel: ObservableObject {
 extension Notification.Name {
     static let newPomodoroSessionAdded = Notification.Name("newPomodoroSessionAdded")
     static let historyTabSelected = Notification.Name("historyTabSelected")
+    static let switchToTimerTab = Notification.Name("switchToTimerTab")
 } 

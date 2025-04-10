@@ -82,8 +82,17 @@ class NotificationService: NSObject {
             content.sound = .default
         }
         
+        // Add user info to identify foreground notifications
+        if UIApplication.shared.applicationState == .active {
+            content.userInfo = ["foregroundNotification": true]
+        }
+        
+        // Use a fixed identifier for foreground notifications so they can be handled properly
+        let identifier = UIApplication.shared.applicationState == .active ? 
+            "foregroundTimerNotification" : UUID().uuidString
+        
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
-        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
+        let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
         
         UNUserNotificationCenter.current().add(request)
     }
@@ -121,7 +130,12 @@ class NotificationService: NSObject {
     
     // Cancel scheduled timer notifications
     func cancelPendingTimerNotifications() {
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["timerEndNotification"])
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["timerEndNotification", "foregroundTimerNotification"])
+    }
+    
+    // Method to post a notification to switch to the timer tab
+    func postSwitchToTimerTabNotification() {
+        NotificationCenter.default.post(name: .switchToTimerTab, object: nil)
     }
 }
 
@@ -131,8 +145,22 @@ extension NotificationService: UNUserNotificationCenterDelegate {
     func userNotificationCenter(_ center: UNUserNotificationCenter, 
                               willPresent notification: UNNotification, 
                               withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-        // Show the notification with banner and sound when in foreground
-        completionHandler([.banner, .sound, .badge])
+        // Add a user info value to detect when the notification was displayed while the app was in foreground
+        _ = notification.request.content.userInfo
+        
+        // Check if we're in the timer tab
+        if !isTimerTabSelected() {
+            // If not in timer tab, show notification with banner and sound
+            completionHandler([.banner, .sound])
+        } else {
+            // We're already in the timer tab, don't show the notification
+            completionHandler([])
+        }
+    }
+    
+    // Helper to check if timer tab is selected
+    private func isTimerTabSelected() -> Bool {
+        return UserDefaults.standard.integer(forKey: "selectedTab") == 0
     }
     
     // This method handles the user's response to a delivered notification
@@ -141,6 +169,9 @@ extension NotificationService: UNUserNotificationCenterDelegate {
                                withCompletionHandler completionHandler: @escaping () -> Void) {
         // Set the selected tab to Timer tab (0) when app is opened from notification
         UserDefaults.standard.set(0, forKey: "selectedTab")
+        
+        // Post notification to switch to timer tab
+        postSwitchToTimerTabNotification()
         
         // Cancel any pending notifications since the user is now in the app
         cancelPendingTimerNotifications()
