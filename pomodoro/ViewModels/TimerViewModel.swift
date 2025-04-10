@@ -9,13 +9,18 @@ class TimerViewModel: ObservableObject {
     @Published var completedSessions: Int = 0
     
     private var timer: AnyCancellable?
-    private let workTime: Int = 25 * 60
-    private let shortBreakTime: Int = 5 * 60
-    private let longBreakTime: Int = 15 * 60
+    
+    // Default values
+    private let defaultWorkTime: Int = 25 * 60
+    private let defaultShortBreakTime: Int = 5 * 60
+    private let defaultLongBreakTime: Int = 15 * 60
+    private let defaultSessionsUntilLongBreak: Int = 4
     
     init() {
         // Request notification permissions when the app starts
         NotificationService.shared.requestAuthorization()
+        // Initialize timer with current settings
+        resetTimer()
     }
     
     var timeString: String {
@@ -40,7 +45,7 @@ class TimerViewModel: ObservableObject {
     func resetTimer() {
         timer?.cancel()
         isRunning = false
-        timeRemaining = isWorkMode ? workTime : shortBreakTime
+        timeRemaining = isWorkMode ? getWorkTime() : getBreakTime()
         progress = 1.0
     }
     
@@ -59,7 +64,7 @@ class TimerViewModel: ObservableObject {
     }
     
     private func updateProgress() {
-        let totalTime = isWorkMode ? workTime : shortBreakTime
+        let totalTime = isWorkMode ? getWorkTime() : getBreakTime()
         progress = Double(timeRemaining) / Double(totalTime)
     }
     
@@ -72,7 +77,40 @@ class TimerViewModel: ObservableObject {
         }
         
         isWorkMode.toggle()
-        timeRemaining = isWorkMode ? workTime : shortBreakTime
+        timeRemaining = isWorkMode ? getWorkTime() : getBreakTime()
         progress = 1.0
+        
+        // Auto-start next timer if enabled
+        if shouldAutoStartNextTimer() {
+            isRunning = true
+            startTimer()
+        }
+    }
+    
+    // MARK: - Settings Helpers
+    
+    private func getWorkTime() -> Int {
+        Int(UserDefaults.standard.double(forKey: "workTime") * 60)
+    }
+    
+    private func getBreakTime() -> Int {
+        if shouldTakeLongBreak() {
+            return Int(UserDefaults.standard.double(forKey: "longBreakTime") * 60)
+        } else {
+            return Int(UserDefaults.standard.double(forKey: "shortBreakTime") * 60)
+        }
+    }
+    
+    private func shouldTakeLongBreak() -> Bool {
+        let sessionsUntilLongBreak = UserDefaults.standard.integer(forKey: "sessionsUntilLongBreak")
+        return completedSessions > 0 && completedSessions % sessionsUntilLongBreak == 0
+    }
+    
+    private func shouldAutoStartNextTimer() -> Bool {
+        if isWorkMode {
+            return UserDefaults.standard.bool(forKey: "autoStartPomodoros")
+        } else {
+            return UserDefaults.standard.bool(forKey: "autoStartBreaks")
+        }
     }
 } 

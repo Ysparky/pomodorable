@@ -17,10 +17,17 @@ class NotificationService {
     }
     
     func scheduleNotification(for mode: TimerMode) {
+        // Check if notifications are enabled
+        guard UserDefaults.standard.bool(forKey: "notificationsEnabled") else { return }
+        
         let content = UNMutableNotificationContent()
         content.title = mode == .work ? "¡Tiempo de descanso!" : "¡Tiempo de trabajo!"
         content.body = mode == .work ? "Has completado tu sesión de trabajo. Toma un descanso." : "El descanso ha terminado. ¡Vuelve al trabajo!"
-        content.sound = .default
+        
+        // Only add sound if enabled in settings
+        if UserDefaults.standard.bool(forKey: "soundEnabled") {
+            content.sound = .default
+        }
         
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
         let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
