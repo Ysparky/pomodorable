@@ -24,6 +24,9 @@ class TimerViewModel: ObservableObject {
     // Variables for handling background state
     private var backgroundDate: Date?
     
+    // Variables for session tracking
+    private var sessionStartTime: Date?
+    
     // Settings view model for accessing user preferences
     private let settingsViewModel = SettingsViewModel()
     
@@ -39,6 +42,9 @@ class TimerViewModel: ObservableObject {
         
         // Observe application state changes
         setupAppStateObservers()
+        
+        // Load the completed sessions count from the history service
+        loadCompletedSessionsCount()
     }
     
     deinit {
@@ -253,42 +259,53 @@ class TimerViewModel: ObservableObject {
         timer?.cancel()
     }
     
-    private func startTimer() {
+    func startTimer() {
+        guard isRunning else { return }
+        
         // Cancel any existing timer
         timer?.cancel()
         
-        // Set the timer start date
-        timerStartDate = Date()
+        // Record the start time if this is a new session
+        if timerStartDate == nil {
+            timerStartDate = Date()
+            
+            // Record session start time for history
+            if sessionStartTime == nil {
+                sessionStartTime = Date()
+            }
+        }
         
-        // Configure the timer to update the UI every 0.1 seconds for greater smoothness
+        // Create a new timer that updates every 0.1 seconds
         timer = Timer.publish(every: 0.1, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] _ in
-                guard let self = self else { return }
-                
-                // Calculate the total elapsed time (accumulated + current)
-                let currentElapsed = self.timerStartDate != nil ? -self.timerStartDate!.timeIntervalSinceNow : 0
-                let totalElapsed = self.accumulatedTime + currentElapsed
-                
-                // Calculate the new remaining time (with decimal precision)
-                let newTimeRemaining = max(0, Double(self.currentSessionTotalTime) - totalElapsed)
-                
-                // Round to show only whole seconds
-                let newTimeRemainingInt = Int(round(newTimeRemaining))
-                
-                // Update only if there's a change to avoid unnecessary updates
-                if newTimeRemainingInt != self.timeRemaining {
-                    self.timeRemaining = newTimeRemainingInt
-                    self.updateProgress()
-                    
-                    // If we reach zero, switch mode
-                    if self.timeRemaining <= 0 {
-                        self.pauseTimer()
-                        self.accumulatedTime = 0
-                        self.switchMode()
-                    }
-                }
+                self?.updateTimer()
             }
+    }
+    
+    private func updateTimer() {
+        // Calculate the total elapsed time (accumulated + current)
+        let currentElapsed = timerStartDate != nil ? -timerStartDate!.timeIntervalSinceNow : 0
+        let totalElapsed = accumulatedTime + currentElapsed
+        
+        // Calculate the new remaining time (with decimal precision)
+        let newTimeRemaining = max(0, Double(currentSessionTotalTime) - totalElapsed)
+        
+        // Round to show only whole seconds
+        let newTimeRemainingInt = Int(round(newTimeRemaining))
+        
+        // Update only if there's a change to avoid unnecessary updates
+        if newTimeRemainingInt != timeRemaining {
+            timeRemaining = newTimeRemainingInt
+            updateProgress()
+            
+            // If we reach zero, switch mode
+            if timeRemaining <= 0 {
+                pauseTimer()
+                accumulatedTime = 0
+                switchMode()
+            }
+        }
     }
     
     private func updateProgress() {
@@ -303,9 +320,32 @@ class TimerViewModel: ObservableObject {
         
         if isWorkMode {
             completedSessions += 1
-            NotificationService.shared.scheduleNotification(for: .break_)
-        } else {
+            
+            // Record completed work session in history
+            if let startTime = sessionStartTime {
+                let session = PomodoroSession(
+                    startTime: startTime,
+                    endTime: Date(),
+                    duration: TimeInterval(currentSessionTotalTime),
+                    isCompleted: true
+                )
+                HistoryService.shared.savePomodoroSession(session)
+            }
+            
             NotificationService.shared.scheduleNotification(for: .work)
+        } else {
+            // Record completed break session (we don't count breaks in completedSessions)
+            if let startTime = sessionStartTime {
+                let session = PomodoroSession(
+                    startTime: startTime,
+                    endTime: Date(),
+                    duration: TimeInterval(currentSessionTotalTime),
+                    isCompleted: false // Breaks are not counted as "completed" pomodoros
+                )
+                HistoryService.shared.savePomodoroSession(session)
+            }
+            
+            NotificationService.shared.scheduleNotification(for: .break_)
         }
         
         isWorkMode.toggle()
@@ -318,6 +358,9 @@ class TimerViewModel: ObservableObject {
         // Reset the accumulated time for the new session
         accumulatedTime = 0
         timerStartDate = nil
+        
+        // Reset session start time for the new session
+        sessionStartTime = nil
         
         // Auto-start next timer if enabled
         if shouldAutoStartNextTimer() {
@@ -345,5 +388,11 @@ class TimerViewModel: ObservableObject {
         } else {
             return settingsViewModel.shouldAutoStartBreaks()
         }
+    }
+    
+    private func loadCompletedSessionsCount() {
+        // Get today's sessions and update the counter
+        let todaySessions = HistoryService.shared.getSessionsForCurrentDay()
+        completedSessions = todaySessions.filter({ $0.isCompleted }).count
     }
 } 

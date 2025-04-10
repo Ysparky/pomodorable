@@ -54,7 +54,7 @@ struct pomodoroApp: App {
         do {
             try BGTaskScheduler.shared.submit(request)
         } catch {
-            print("No se pudo programar la tarea en segundo plano: \(error)")
+            print("Could not schedule background task: \(error)")
         }
     }
 }
