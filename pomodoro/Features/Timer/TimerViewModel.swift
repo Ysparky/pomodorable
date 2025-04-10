@@ -330,6 +330,11 @@ class TimerViewModel: ObservableObject {
                     isCompleted: true
                 )
                 HistoryService.shared.savePomodoroSession(session)
+                
+                // Explicitly post notification to update history UI
+                DispatchQueue.main.async {
+                    NotificationCenter.default.post(name: .newPomodoroSessionAdded, object: nil)
+                }
             }
             
             NotificationService.shared.scheduleNotification(for: .work)
@@ -343,6 +348,11 @@ class TimerViewModel: ObservableObject {
                     isCompleted: false // Breaks are not counted as "completed" pomodoros
                 )
                 HistoryService.shared.savePomodoroSession(session)
+                
+                // Explicitly post notification to update history UI
+                DispatchQueue.main.async {
+                    NotificationCenter.default.post(name: .newPomodoroSessionAdded, object: nil)
+                }
             }
             
             NotificationService.shared.scheduleNotification(for: .break_)

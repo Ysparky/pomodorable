@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import SwiftUI
 
 class HistoryViewModel: ObservableObject {
     @Published var dailySessions: [PomodoroSession] = []
@@ -10,9 +11,9 @@ class HistoryViewModel: ObservableObject {
     @Published var selectedTimeframe: Timeframe = .daily
     
     enum Timeframe: String, CaseIterable, Identifiable {
-        case daily = "Today"
-        case weekly = "This Week"
-        case monthly = "This Month"
+        case daily = "Hoy"
+        case weekly = "Esta Semana"
+        case monthly = "Este Mes"
         
         var id: String { self.rawValue }
     }
@@ -25,6 +26,31 @@ class HistoryViewModel: ObservableObject {
         
         // Setup notification for when a new session is added
         NotificationCenter.default.publisher(for: .newPomodoroSessionAdded)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.refreshHistory()
+            }
+            .store(in: &cancellables)
+        
+        // Observer for app returning to foreground to refresh data
+        NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.refreshHistory()
+            }
+            .store(in: &cancellables)
+        
+        // Observer for tab selection changes
+        NotificationCenter.default.publisher(for: .historyTabSelected)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.refreshHistory()
+            }
+            .store(in: &cancellables)
+        
+        // Create timer to periodically refresh the data every minute
+        Timer.publish(every: 60, on: .main, in: .common)
+            .autoconnect()
             .sink { [weak self] _ in
                 self?.refreshHistory()
             }
@@ -32,10 +58,17 @@ class HistoryViewModel: ObservableObject {
     }
     
     func refreshHistory() {
-        dailySessions = HistoryService.shared.getSessionsForCurrentDay()
-        weeklySessions = HistoryService.shared.getSessionsForCurrentWeek()
-        monthlySessions = HistoryService.shared.getSessionsForCurrentMonth()
-        stats = HistoryService.shared.getStats()
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
+            self.dailySessions = HistoryService.shared.getSessionsForCurrentDay()
+            self.weeklySessions = HistoryService.shared.getSessionsForCurrentWeek()
+            self.monthlySessions = HistoryService.shared.getSessionsForCurrentMonth()
+            self.stats = HistoryService.shared.getStats()
+            
+            // Force UI update by triggering objectWillChange
+            self.objectWillChange.send()
+        }
     }
     
     func clearAllHistory() {
@@ -104,4 +137,5 @@ class HistoryViewModel: ObservableObject {
 // Notification for when a new Pomodoro session is added
 extension Notification.Name {
     static let newPomodoroSessionAdded = Notification.Name("newPomodoroSessionAdded")
+    static let historyTabSelected = Notification.Name("historyTabSelected")
 } 

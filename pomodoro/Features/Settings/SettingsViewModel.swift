@@ -9,7 +9,7 @@ class SettingsViewModel: ObservableObject {
     static let durationChangedNotification = Notification.Name("DurationSettingsChanged")
     static let sessionsChangedNotification = Notification.Name("SessionsSettingsChanged")
     
-    // Método para resetear la configuración
+    // Method to reset the settings to default
     func resetToDefaultSettings() {
         SettingsService.shared.resetToDefaults()
     }

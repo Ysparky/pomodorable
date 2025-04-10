@@ -18,6 +18,7 @@ struct HistoryView: View {
                 
                 // Stats summary card
                 SummaryCardView(viewModel: viewModel)
+                    .id("\(viewModel.selectedTimeframe)-\(viewModel.totalSessionsForSelectedTimeframe)-\(viewModel.totalMinutesForSelectedTimeframe)")
                 
                 // List of sessions
                 List {
@@ -36,34 +37,37 @@ struct HistoryView: View {
                     viewModel.refreshHistory()
                 }
             }
-            .navigationTitle("History")
+            .navigationTitle("Historial")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
                         Button(role: .destructive, action: {
                             showClearConfirmation = true
                         }) {
-                            Label("Clear All History", systemImage: "trash")
+                            Label("Borrar todo el historial", systemImage: "trash")
                         }
                         
                         Button(action: {
                             viewModel.clearHistoryOlderThan30Days()
                         }) {
-                            Label("Clear Older Than 30 Days", systemImage: "clock.arrow.circlepath")
+                            Label("Borrar anterior a 30 días", systemImage: "clock.arrow.circlepath")
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle")
                     }
                 }
             }
-            .alert("Clear All History", isPresented: $showClearConfirmation) {
-                Button("Cancel", role: .cancel) { }
-                Button("Clear", role: .destructive) {
+            .alert("Borrar todo el historial", isPresented: $showClearConfirmation) {
+                Button("Cancelar", role: .cancel) { }
+                Button("Borrar", role: .destructive) {
                     viewModel.clearAllHistory()
                 }
             } message: {
-                Text("This action cannot be undone.")
+                Text("Esta acción no se puede deshacer.")
             }
+        }
+        .onAppear {
+            viewModel.refreshHistory() // Refresh when view appears
         }
     }
     
@@ -75,12 +79,13 @@ struct HistoryView: View {
         if let date = dateFormatter.date(from: dateString) {
             // Today, Yesterday, or actual date
             if Calendar.current.isDateInToday(date) {
-                return "Today"
+                return "Hoy"
             } else if Calendar.current.isDateInYesterday(date) {
-                return "Yesterday"
+                return "Ayer"
             } else {
                 let displayFormatter = DateFormatter()
-                displayFormatter.dateFormat = "EEEE, MMM d"
+                displayFormatter.dateFormat = "EEEE, d MMM"
+                displayFormatter.locale = Locale(identifier: "es_ES")
                 return displayFormatter.string(from: date)
             }
         }
@@ -90,13 +95,13 @@ struct HistoryView: View {
 }
 
 struct SummaryCardView: View {
-    let viewModel: HistoryViewModel
+    @ObservedObject var viewModel: HistoryViewModel
     
     var body: some View {
         VStack(spacing: 16) {
             HStack(spacing: 20) {
                 StatView(
-                    title: "Sessions",
+                    title: "Sesiones",
                     value: "\(viewModel.totalSessionsForSelectedTimeframe)",
                     icon: "timer"
                 )
@@ -105,7 +110,7 @@ struct SummaryCardView: View {
                     .frame(height: 40)
                 
                 StatView(
-                    title: "Minutes",
+                    title: "Minutos",
                     value: "\(viewModel.totalMinutesForSelectedTimeframe)",
                     icon: "clock"
                 )
@@ -116,7 +121,7 @@ struct SummaryCardView: View {
                     Image(systemName: "star.fill")
                         .foregroundColor(.yellow)
                     
-                    Text("Most productive: \(mostProductiveTime)")
+                    Text("Más productivo: \(translateTimeOfDay(mostProductiveTime))")
                         .font(.footnote)
                         .foregroundColor(.secondary)
                 }
@@ -128,6 +133,21 @@ struct SummaryCardView: View {
                 .fill(Color(.systemGray6))
         )
         .padding(.horizontal)
+    }
+    
+    private func translateTimeOfDay(_ timeOfDay: String) -> String {
+        switch timeOfDay {
+        case "Morning":
+            return "Mañana"
+        case "Afternoon":
+            return "Tarde"
+        case "Evening":
+            return "Atardecer"
+        case "Night":
+            return "Noche"
+        default:
+            return timeOfDay
+        }
     }
 }
 
@@ -166,7 +186,7 @@ struct SessionRowView: View {
                 .frame(width: 10, height: 10)
             
             VStack(alignment: .leading) {
-                Text(session.isCompleted ? "Focus Session" : "Break")
+                Text(session.isCompleted ? "Sesión Pomodoro" : "Descanso")
                     .font(.headline)
                 
                 Text("\(session.durationString) • \(formatTime(session.startTime))")

@@ -46,6 +46,7 @@ struct PomodoroSession: Identifiable, Codable {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
+        formatter.locale = Locale(identifier: "es_ES")
         return formatter.string(from: startTime)
     }
     
