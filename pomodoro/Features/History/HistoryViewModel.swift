@@ -14,6 +14,12 @@ class HistoryViewModel: ObservableObject {
     @Published var isCustomDateSelected: Bool = false
     @Published var dateTitle: String = "Hoy"
     
+    // Propiedades para sincronización con iCloud
+    @Published var isCloudSyncEnabled: Bool = false
+    @Published var isSyncing: Bool = false
+    @Published var lastSyncDate: Date?
+    @Published var syncError: String?
+    
     enum Timeframe: String, CaseIterable, Identifiable {
         case daily = "Hoy"
         case weekly = "Esta Semana"
@@ -25,6 +31,9 @@ class HistoryViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     
     init() {
+        // Cargar estado de sincronización
+        isCloudSyncEnabled = HistoryService.shared.isCloudSyncEnabled()
+        
         // Initial load
         refreshHistory()
         
@@ -52,6 +61,17 @@ class HistoryViewModel: ObservableObject {
             }
             .store(in: &cancellables)
         
+        // Observador para cuando se completa una sincronización con iCloud
+        NotificationCenter.default.publisher(for: CloudKitSyncService.cloudSyncCompletedNotification)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.refreshHistory()
+                self?.isSyncing = false
+                self?.lastSyncDate = Date()
+                self?.syncError = nil
+            }
+            .store(in: &cancellables)
+        
         // Create timer to periodically refresh the data every minute
         Timer.publish(every: 60, on: .main, in: .common)
             .autoconnect()
@@ -69,6 +89,40 @@ class HistoryViewModel: ObservableObject {
             .store(in: &cancellables)
     }
     
+    // MARK: - iCloud Sync
+    
+    func toggleCloudSync() {
+        isCloudSyncEnabled.toggle()
+        HistoryService.shared.setCloudSyncEnabled(isCloudSyncEnabled)
+        
+        if isCloudSyncEnabled {
+            syncWithCloud()
+        }
+    }
+    
+    func syncWithCloud() {
+        guard isCloudSyncEnabled else {
+            syncError = "La sincronización con iCloud no está habilitada"
+            return
+        }
+        
+        isSyncing = true
+        syncError = nil
+        
+        HistoryService.shared.syncWithCloud { [weak self] error in
+            DispatchQueue.main.async {
+                self?.isSyncing = false
+                
+                if let error = error {
+                    self?.syncError = error.localizedDescription
+                } else {
+                    self?.lastSyncDate = Date()
+                    self?.refreshHistory()
+                }
+            }
+        }
+    }
+    
     func refreshHistory() {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
@@ -82,6 +136,9 @@ class HistoryViewModel: ObservableObject {
                 self.weeklySessions = HistoryService.shared.getSessionsForCurrentWeek()
                 self.monthlySessions = HistoryService.shared.getSessionsForCurrentMonth()
                 self.stats = HistoryService.shared.getStats()
+                
+                // Actualizar la fecha de última sincronización
+                self.lastSyncDate = self.stats.lastSyncedWithCloud
                 
                 // Actualizar el título de la fecha
                 self.updateDateTitle()
@@ -198,6 +255,19 @@ class HistoryViewModel: ObservableObject {
         let thirtyDaysAgo = Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
         HistoryService.shared.clearHistoryOlderThan(thirtyDaysAgo)
         refreshHistory()
+    }
+    
+    // MARK: - Formatters
+    
+    var lastSyncFormatted: String {
+        guard let lastSync = lastSyncDate else {
+            return "Nunca"
+        }
+        
+        let formatter = RelativeDateTimeFormatter()
+        formatter.locale = Locale(identifier: "es_ES")
+        formatter.unitsStyle = .full
+        return formatter.localizedString(for: lastSync, relativeTo: Date())
     }
     
     // MARK: - Computed Properties

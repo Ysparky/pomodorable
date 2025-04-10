@@ -1,10 +1,12 @@
 import Foundation
+import UIKit
 
 class HistoryService {
     static let shared = HistoryService()
     
     private let sessionsKey = "pomodoro_sessions"
     private let statsKey = "pomodoro_stats"
+    private let iCloudEnabledKey = "icloud_sync_enabled"
     
     // Statistics structure to store aggregate data
     struct PomodoroStats: Codable {
@@ -13,9 +15,129 @@ class HistoryService {
         var mostProductiveDay: String = ""
         var mostProductiveDayCount: Int = 0
         var lastUpdated: Date = Date()
+        var lastSyncedWithCloud: Date?
     }
     
-    private init() {}
+    private init() {
+        // Configurar observadores para sincronización en la nube
+        setupCloudSyncObservers()
+    }
+    
+    // MARK: - iCloud Sync
+    
+    private func setupCloudSyncObservers() {
+        // Observar cuando la aplicación regresa al primer plano para intentar sincronizar
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAppWillEnterForeground),
+            name: UIApplication.willEnterForegroundNotification,
+            object: nil
+        )
+        
+        // Observar cuando se completa una sincronización
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleCloudSyncCompleted),
+            name: CloudKitSyncService.cloudSyncCompletedNotification,
+            object: nil
+        )
+    }
+    
+    @objc private func handleAppWillEnterForeground() {
+        if isCloudSyncEnabled() {
+            syncWithCloud()
+        }
+    }
+    
+    @objc private func handleCloudSyncCompleted() {
+        // Actualizar la marca de tiempo de última sincronización
+        var stats = getStats()
+        stats.lastSyncedWithCloud = Date()
+        saveStats(stats)
+    }
+    
+    func isCloudSyncEnabled() -> Bool {
+        return UserDefaults.standard.bool(forKey: iCloudEnabledKey)
+    }
+    
+    func setCloudSyncEnabled(_ enabled: Bool) {
+        UserDefaults.standard.set(enabled, forKey: iCloudEnabledKey)
+        
+        if enabled {
+            // Si se activa, iniciar sincronización inmediata
+            syncWithCloud()
+        }
+    }
+    
+    func syncWithCloud(completion: ((Error?) -> Void)? = nil) {
+        // Primero verificar si el usuario tiene una cuenta de iCloud disponible
+        CloudKitSyncService.shared.checkiCloudAccountStatus { [weak self] isAvailable, error in
+            guard let self = self else { return }
+            
+            if let error = error {
+                print("Error de cuenta iCloud: \(error.localizedDescription)")
+                completion?(error)
+                return
+            }
+            
+            if isAvailable {
+                // Obtener todas las sesiones de iCloud
+                CloudKitSyncService.shared.fetchAllSessions { [weak self] cloudSessions, error in
+                    guard let self = self else { return }
+                    
+                    if let error = error {
+                        print("Error al obtener sesiones de iCloud: \(error.localizedDescription)")
+                        completion?(error)
+                        return
+                    }
+                    
+                    guard let cloudSessions = cloudSessions else {
+                        completion?(nil)
+                        return
+                    }
+                    
+                    // Obtener sesiones locales
+                    let localSessions = self.getAllSessions()
+                    
+                    // Combinar sesiones (preferir las que ya existen localmente)
+                    var combinedSessions = localSessions
+                    
+                    // Identificar sesiones nuevas de la nube que no existen localmente
+                    let localSessionIds = Set(localSessions.map { $0.id })
+                    let newCloudSessions = cloudSessions.filter { !localSessionIds.contains($0.id) }
+                    
+                    // Agregar las nuevas sesiones de la nube a la colección local
+                    combinedSessions.append(contentsOf: newCloudSessions)
+                    
+                    // Guardar la colección combinada localmente
+                    self.saveAllSessions(combinedSessions)
+                    
+                    // Sincronizar cualquier sesión local nueva a la nube
+                    let cloudSessionIds = Set(cloudSessions.map { $0.id })
+                    let newLocalSessions = localSessions.filter { !cloudSessionIds.contains($0.id) }
+                    
+                    if !newLocalSessions.isEmpty {
+                        CloudKitSyncService.shared.saveSessions(newLocalSessions) { error in
+                            if let error = error {
+                                print("Error al guardar sesiones en iCloud: \(error.localizedDescription)")
+                            }
+                            
+                            completion?(error)
+                        }
+                    } else {
+                        completion?(nil)
+                    }
+                    
+                    // Actualizar estadísticas
+                    self.recalculateStats()
+                }
+            } else {
+                print("iCloud no disponible")
+                completion?(NSError(domain: "com.app.pomodoro", code: 1001, 
+                                   userInfo: [NSLocalizedDescriptionKey: "iCloud no está disponible"]))
+            }
+        }
+    }
     
     // MARK: - Session Management
     
@@ -24,6 +146,15 @@ class HistoryService {
         sessions.append(session)
         saveAllSessions(sessions)
         updateStats(with: session)
+        
+        // Sincronizar con iCloud si está habilitado
+        if isCloudSyncEnabled() {
+            CloudKitSyncService.shared.saveSessions([session]) { error in
+                if let error = error {
+                    print("Error al guardar sesión en iCloud: \(error.localizedDescription)")
+                }
+            }
+        }
         
         // Post notification for observers
         NotificationCenter.default.post(name: .newPomodoroSessionAdded, object: nil)
@@ -140,6 +271,15 @@ class HistoryService {
         }
     }
     
+    private func saveStats(_ stats: PomodoroStats) {
+        do {
+            let data = try JSONEncoder().encode(stats)
+            UserDefaults.standard.set(data, forKey: statsKey)
+        } catch {
+            print("Error encoding Pomodoro stats: \(error.localizedDescription)")
+        }
+    }
+    
     private func updateStats(with session: PomodoroSession) {
         var stats = getStats()
         
@@ -163,12 +303,34 @@ class HistoryService {
         
         stats.lastUpdated = Date()
         
-        do {
-            let data = try JSONEncoder().encode(stats)
-            UserDefaults.standard.set(data, forKey: statsKey)
-        } catch {
-            print("Error encoding Pomodoro stats: \(error.localizedDescription)")
+        saveStats(stats)
+    }
+    
+    // Recalcular todas las estadísticas
+    func recalculateStats() {
+        var stats = PomodoroStats()
+        let sessions = getAllSessions()
+        
+        for session in sessions where session.isCompleted {
+            stats.totalSessions += 1
+            stats.totalTime += session.duration
+            
+            // Encontrar el día más productivo
+            let dayOfSession = getSessionsForDay(session.startTime)
+            let completedCount = dayOfSession.filter { $0.isCompleted }.count
+            
+            if completedCount > stats.mostProductiveDayCount {
+                stats.mostProductiveDayCount = completedCount
+                
+                let formatter = DateFormatter()
+                formatter.dateStyle = .medium
+                formatter.timeStyle = .none
+                stats.mostProductiveDay = formatter.string(from: session.startTime)
+            }
         }
+        
+        stats.lastUpdated = Date()
+        saveStats(stats)
     }
     
     // MARK: - Data Management
@@ -176,14 +338,41 @@ class HistoryService {
     func clearAllHistory() {
         UserDefaults.standard.removeObject(forKey: sessionsKey)
         UserDefaults.standard.removeObject(forKey: statsKey)
+        
+        // Si la sincronización con iCloud está habilitada, también eliminar datos de la nube
+        if isCloudSyncEnabled() {
+            CloudKitSyncService.shared.deleteAllSessions { error in
+                if let error = error {
+                    print("Error al eliminar datos de iCloud: \(error.localizedDescription)")
+                }
+            }
+        }
     }
     
     func clearHistoryOlderThan(_ date: Date) {
-        let sessions = getAllSessions().filter { $0.startTime >= date }
-        saveAllSessions(sessions)
+        // Obtener todas las sesiones
+        let allSessions = getAllSessions()
         
-        // Recalculate stats
-        _ = PomodoroStats()
-        sessions.forEach { updateStats(with: $0) }
+        // Filtrar sesiones más recientes que la fecha especificada
+        let recentSessions = allSessions.filter { $0.startTime >= date }
+        
+        // Identificar IDs de sesiones a eliminar
+        let sessionsToDelete = allSessions.filter { $0.startTime < date }
+        let idsToDelete = sessionsToDelete.map { $0.id }
+        
+        // Guardar solo las sesiones recientes
+        saveAllSessions(recentSessions)
+        
+        // Recalcular estadísticas
+        recalculateStats()
+        
+        // Si la sincronización con iCloud está habilitada, eliminar sesiones antiguas de la nube
+        if isCloudSyncEnabled() && !idsToDelete.isEmpty {
+            CloudKitSyncService.shared.deleteSessions(ids: idsToDelete) { error in
+                if let error = error {
+                    print("Error al eliminar sesiones antiguas de iCloud: \(error.localizedDescription)")
+                }
+            }
+        }
     }
 } 

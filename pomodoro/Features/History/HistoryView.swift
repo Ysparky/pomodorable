@@ -5,6 +5,7 @@ struct HistoryView: View {
     @State private var showClearConfirmation = false
     @State private var viewMode: ViewMode = .list
     @State private var showCalendar = false
+    @State private var showingActionSheet = false
     
     enum ViewMode {
         case list
@@ -18,30 +19,39 @@ struct HistoryView: View {
                     .edgesIgnoringSafeArea(.all)
                 
                 VStack(spacing: 0) {
-                    // Título y fecha en lugar del botón de calendario
+                    // Header with date and sync indicator
                     HStack {
-                        Text(viewModel.dateTitle)
-                            .font(.headline)
-                            .foregroundColor(.primary)
+                        Button(action: {
+                            showCalendar.toggle()
+                        }) {
+                            HStack {
+                                Text(viewModel.dateTitle)
+                                    .font(.headline)
+                                    .foregroundColor(.primary)
+                                Image(systemName: "calendar")
+                                    .foregroundColor(.accentColor)
+                            }
+                            .padding(.horizontal)
+                        }
                         
                         Spacer()
                         
-                        Button(action: {
-                            showCalendar = true
-                        }) {
+                        if viewModel.isCloudSyncEnabled {
                             HStack(spacing: 4) {
-                                Text("Calendario")
-                                    .font(.subheadline)
-                                
-                                Image(systemName: "calendar")
-                                    .font(.footnote)
+                                if viewModel.isSyncing {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .secondary))
+                                        .scaleEffect(0.7)
+                                } else {
+                                    Image(systemName: "icloud")
+                                        .foregroundColor(.accentColor)
+                                }
                             }
-                            .foregroundColor(.accentColor)
+                            .padding(.horizontal)
                         }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 16)
-                    .padding(.bottom, 8)
+                    .padding(.vertical, 8)
+                    .background(Color(UIColor.secondarySystemBackground))
                     
                     // TaskScheduleSelector en lugar del Picker de timeframe
                     TaskScheduleSelector(
@@ -190,7 +200,7 @@ struct HistoryView: View {
                             Divider()
                             
                             Button(role: .destructive, action: {
-                                showClearConfirmation = true
+                                showingActionSheet = true
                             }) {
                                 Label("Borrar todo el historial", systemImage: "trash")
                             }
@@ -205,11 +215,23 @@ struct HistoryView: View {
                         }
                     }
                 }
+                
+                // Añadir botón para sincronizar manualmente
+                if viewModel.isCloudSyncEnabled {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button(action: {
+                            viewModel.syncWithCloud()
+                        }) {
+                            Image(systemName: "arrow.triangle.2.circlepath")
+                                .disabled(viewModel.isSyncing)
+                        }
+                    }
+                }
             }
             .sheet(isPresented: $showCalendar) {
                 CalendarView(viewModel: viewModel)
             }
-            .alert("Borrar todo el historial", isPresented: $showClearConfirmation) {
+            .alert("Borrar todo el historial", isPresented: $showingActionSheet) {
                 Button("Cancelar", role: .cancel) { }
                 Button("Borrar", role: .destructive) {
                     viewModel.clearAllHistory()

@@ -11,6 +11,7 @@ struct SettingsView: View {
     @AppStorage("autoStartPomodoros") private var autoStartPomodoros: Bool = false
     
     @StateObject private var viewModel = SettingsViewModel()
+    @StateObject private var historyViewModel = HistoryViewModel()
     
     @State private var showResetConfirmAlert = false
     
@@ -90,6 +91,43 @@ struct SettingsView: View {
             Section(header: Text("Auto-inicio")) {
                 Toggle("Iniciar descansos automáticamente", isOn: $autoStartBreaks)
                 Toggle("Iniciar pomodoros automáticamente", isOn: $autoStartPomodoros)
+            }
+            
+            // Sección de sincronización con iCloud
+            Section(header: Text("Sincronización")) {
+                Toggle("Sincronizar con iCloud", isOn: $historyViewModel.isCloudSyncEnabled)
+                    .onChange(of: historyViewModel.isCloudSyncEnabled) { oldValue, newValue in
+                        historyViewModel.toggleCloudSync()
+                    }
+                
+                HStack {
+                    Text("Última sincronización")
+                    Spacer()
+                    Text(historyViewModel.lastSyncFormatted)
+                        .foregroundColor(.secondary)
+                }
+                
+                Button(action: {
+                    historyViewModel.syncWithCloud()
+                }) {
+                    HStack {
+                        Text("Sincronizar ahora")
+                        Spacer()
+                        if historyViewModel.isSyncing {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle())
+                        } else {
+                            Image(systemName: "arrow.triangle.2.circlepath")
+                        }
+                    }
+                }
+                .disabled(historyViewModel.isSyncing || !historyViewModel.isCloudSyncEnabled)
+                
+                if let error = historyViewModel.syncError {
+                    Text(error)
+                        .font(.footnote)
+                        .foregroundColor(.red)
+                }
             }
             
             Section(header: Text("Apariencia")) {

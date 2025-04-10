@@ -58,7 +58,7 @@ struct TaskScheduleSelector: View {
 
         // Generar array con fechas pasadas y el día actual, manteniendo 7 días en total
         var days: [Date] = []
-        var daysToShow = 7
+        let daysToShow = 7
         var dayOffset = 0
 
         while days.count < daysToShow {
