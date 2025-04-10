@@ -16,20 +16,8 @@ class TimerViewModel: ObservableObject {
     private var configDebouncer: AnyCancellable?
     private var cancellables = Set<AnyCancellable>()
     
-    // Keys to observe
-    private let durationKeys = ["workTime", "shortBreakTime", "longBreakTime"]
-    private let sessionsKey = "sessionsUntilLongBreak"
-    private let otherKeys = ["soundEnabled", "notificationsEnabled", "autoStartBreaks", "autoStartPomodoros"]
-    
-    // Notification names
-    private let durationChangedNotification = Notification.Name("DurationSettingsChanged")
-    private let sessionsChangedNotification = Notification.Name("SessionsSettingsChanged")
-    
-    // Default values
-    private let defaultWorkTime: Int = 25 * 60
-    private let defaultShortBreakTime: Int = 5 * 60
-    private let defaultLongBreakTime: Int = 15 * 60
-    private let defaultSessionsUntilLongBreak: Int = 4
+    // Settings view model for accessing user preferences
+    private let settingsViewModel = SettingsViewModel()
     
     init() {
         // Request notification permissions when the app starts
@@ -50,8 +38,8 @@ class TimerViewModel: ObservableObject {
         center.removeObserver(self)
         
         // Add observers for our specific notifications
-        center.addObserver(self, selector: #selector(handleDurationSettingsChanged), name: durationChangedNotification, object: nil)
-        center.addObserver(self, selector: #selector(handleSessionsSettingsChanged), name: sessionsChangedNotification, object: nil)
+        center.addObserver(self, selector: #selector(handleDurationSettingsChanged), name: SettingsViewModel.durationChangedNotification, object: nil)
+        center.addObserver(self, selector: #selector(handleSessionsSettingsChanged), name: SettingsViewModel.sessionsChangedNotification, object: nil)
     }
     
     @objc private func handleDurationSettingsChanged(_ notification: Notification) {
@@ -185,27 +173,19 @@ class TimerViewModel: ObservableObject {
     // MARK: - Settings Helpers
     
     private func getWorkTime() -> Int {
-        Int(UserDefaults.standard.double(forKey: "workTime") * 60)
+        settingsViewModel.getWorkTime()
     }
     
     private func getBreakTime() -> Int {
-        if shouldTakeLongBreak() {
-            return Int(UserDefaults.standard.double(forKey: "longBreakTime") * 60)
-        } else {
-            return Int(UserDefaults.standard.double(forKey: "shortBreakTime") * 60)
-        }
-    }
-    
-    private func shouldTakeLongBreak() -> Bool {
-        let sessionsUntilLongBreak = UserDefaults.standard.integer(forKey: "sessionsUntilLongBreak")
-        return completedSessions > 0 && completedSessions % sessionsUntilLongBreak == 0
+        let shouldTakeLongBreak = completedSessions > 0 && completedSessions % settingsViewModel.getSessionsUntilLongBreak() == 0
+        return settingsViewModel.getBreakTime(shouldTakeLongBreak: shouldTakeLongBreak)
     }
     
     private func shouldAutoStartNextTimer() -> Bool {
         if isWorkMode {
-            return UserDefaults.standard.bool(forKey: "autoStartPomodoros")
+            return settingsViewModel.shouldAutoStartPomodoros()
         } else {
-            return UserDefaults.standard.bool(forKey: "autoStartBreaks")
+            return settingsViewModel.shouldAutoStartBreaks()
         }
     }
     

@@ -29,7 +29,7 @@ struct SettingsView: View {
                         set: { newValue in
                             workTime = newValue
                             // Send notification for duration change
-                            NotificationCenter.default.post(name: Notification.Name("DurationSettingsChanged"), object: nil)
+                            NotificationCenter.default.post(name: SettingsViewModel.durationChangedNotification, object: nil)
                         }
                     ), in: 1...60, step: 1)
                 }
@@ -46,7 +46,7 @@ struct SettingsView: View {
                         set: { newValue in
                             shortBreakTime = newValue
                             // Send notification for duration change
-                            NotificationCenter.default.post(name: Notification.Name("DurationSettingsChanged"), object: nil)
+                            NotificationCenter.default.post(name: SettingsViewModel.durationChangedNotification, object: nil)
                         }
                     ), in: 1...30, step: 1)
                 }
@@ -63,7 +63,7 @@ struct SettingsView: View {
                         set: { newValue in
                             longBreakTime = newValue
                             // Send notification for duration change
-                            NotificationCenter.default.post(name: Notification.Name("DurationSettingsChanged"), object: nil)
+                            NotificationCenter.default.post(name: SettingsViewModel.durationChangedNotification, object: nil)
                         }
                     ), in: 1...60, step: 1)
                 }
@@ -76,7 +76,7 @@ struct SettingsView: View {
                             set: { newValue in
                                 sessionsUntilLongBreak = newValue
                                 // Send notification for sessions change
-                                NotificationCenter.default.post(name: Notification.Name("SessionsSettingsChanged"), object: nil)
+                                NotificationCenter.default.post(name: SettingsViewModel.sessionsChangedNotification, object: nil)
                             }
                         ),
                         in: 1...10)
@@ -184,8 +184,8 @@ struct SettingsView: View {
         soundEnabled = true
         
         // Send notifications for relevant changes
-        NotificationCenter.default.post(name: Notification.Name("DurationSettingsChanged"), object: nil)
-        NotificationCenter.default.post(name: Notification.Name("SessionsSettingsChanged"), object: nil)
+        NotificationCenter.default.post(name: SettingsViewModel.durationChangedNotification, object: nil)
+        NotificationCenter.default.post(name: SettingsViewModel.sessionsChangedNotification, object: nil)
         
         // The ColorService is already updated by the SettingsService but we need to
         // trigger a UI update
