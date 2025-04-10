@@ -53,7 +53,7 @@ struct HistoryView: View {
                     .padding(.vertical, 8)
                     .background(Color(UIColor.secondarySystemBackground))
                     
-                    // TaskScheduleSelector en lugar del Picker de timeframe
+                    // TaskScheduleSelector instead of Picker of timeframe
                     TaskScheduleSelector(
                         selectedDate: Binding(
                             get: { self.viewModel.selectedDate },
