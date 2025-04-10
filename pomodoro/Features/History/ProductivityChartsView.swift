@@ -15,7 +15,7 @@ struct ProductivityChartsView: View {
     }
     
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 8) {
             // Chart type selector
             Picker("Tipo de Gráfico", selection: $selectedChartType) {
                 ForEach(ChartType.allCases) { type in
@@ -24,15 +24,17 @@ struct ProductivityChartsView: View {
             }
             .pickerStyle(SegmentedPickerStyle())
             .padding(.horizontal)
+            .padding(.top, 0)
+            .padding(.bottom, 8)
             
             // Chart display
             switch selectedChartType {
             case .daily:
-                DailySessionsChart(sessions: viewModel.sessionsForSelectedTimeframe)
+                DailySessionsChart(sessions: viewModel.sessionsForSelectedDay)
             case .hourly:
-                HourlyDistributionChart(sessions: viewModel.sessionsForSelectedTimeframe)
+                HourlyDistributionChart(sessions: viewModel.sessionsForSelectedDay)
             case .trend:
-                ProductivityTrendChart(sessions: viewModel.sessionsForSelectedTimeframe)
+                ProductivityTrendChart(sessions: viewModel.sessionsForSelectedDay)
             case .weekly:
                 WeekdayProductivityChart(viewModel: viewModel)
             }
@@ -69,10 +71,15 @@ struct DailySessionsChart: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading) {
-            Text("Sesiones Completadas por Día")
-                .font(.headline)
-                .padding(.horizontal)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("Sesiones Completadas por Día")
+                    .font(.headline)
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(Color(.secondarySystemGroupedBackground))
             
             if #available(iOS 16.0, *) {
                 Chart(sessionsPerDay) { dayData in
@@ -83,7 +90,8 @@ struct DailySessionsChart: View {
                     .foregroundStyle(Color.green.gradient)
                 }
                 .frame(height: 220)
-                .padding()
+                .padding(16)
+                .background(Color(.secondarySystemGroupedBackground))
                 .chartYAxis {
                     AxisMarks(position: .leading)
                 }
@@ -92,13 +100,12 @@ struct DailySessionsChart: View {
                 Text("Gráficos disponibles en iOS 16 o superior")
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .center)
+                    .background(Color(.secondarySystemGroupedBackground))
             }
         }
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemGray6))
-        )
+        .clipShape(RoundedRectangle(cornerRadius: 10))
         .padding(.horizontal)
+        .padding(.bottom, 8)
     }
 }
 
@@ -121,10 +128,15 @@ struct HourlyDistributionChart: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading) {
-            Text("Distribución por Hora del Día")
-                .font(.headline)
-                .padding(.horizontal)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("Distribución por Hora del Día")
+                    .font(.headline)
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(Color(.secondarySystemGroupedBackground))
             
             if #available(iOS 16.0, *) {
                 Chart(sessionsByTimeOfDay) { timeData in
@@ -144,19 +156,19 @@ struct HourlyDistributionChart: View {
                     }
                 }
                 .frame(height: 220)
-                .padding()
+                .padding(16)
+                .background(Color(.secondarySystemGroupedBackground))
             } else {
                 // Fallback para iOS 15 o anterior
                 Text("Gráficos disponibles en iOS 16 o superior")
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .center)
+                    .background(Color(.secondarySystemGroupedBackground))
             }
         }
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemGray6))
-        )
+        .clipShape(RoundedRectangle(cornerRadius: 10))
         .padding(.horizontal)
+        .padding(.bottom, 8)
     }
 }
 
@@ -195,10 +207,15 @@ struct ProductivityTrendChart: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading) {
-            Text("Tendencia de Productividad")
-                .font(.headline)
-                .padding(.horizontal)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("Tendencia de Productividad")
+                    .font(.headline)
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(Color(.secondarySystemGroupedBackground))
             
             if #available(iOS 16.0, *) {
                 Chart(productivityTrend) { dataPoint in
@@ -216,7 +233,8 @@ struct ProductivityTrendChart: View {
                     .foregroundStyle(Color.blue)
                 }
                 .frame(height: 220)
-                .padding()
+                .padding(16)
+                .background(Color(.secondarySystemGroupedBackground))
                 .chartYAxis {
                     AxisMarks(position: .leading)
                 }
@@ -228,13 +246,12 @@ struct ProductivityTrendChart: View {
                 Text("Gráficos disponibles en iOS 16 o superior")
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .center)
+                    .background(Color(.secondarySystemGroupedBackground))
             }
         }
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemGray6))
-        )
+        .clipShape(RoundedRectangle(cornerRadius: 10))
         .padding(.horizontal)
+        .padding(.bottom, 8)
     }
 }
 
@@ -261,10 +278,15 @@ struct WeekdayProductivityChart: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading) {
-            Text("Productividad por Día de la Semana")
-                .font(.headline)
-                .padding(.horizontal)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("Productividad por Día de la Semana")
+                    .font(.headline)
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(Color(.secondarySystemGroupedBackground))
             
             if #available(iOS 16.0, *) {
                 Chart {
@@ -291,7 +313,8 @@ struct WeekdayProductivityChart: View {
                     }
                 }
                 .frame(height: 220)
-                .padding()
+                .padding(16)
+                .background(Color(.secondarySystemGroupedBackground))
                 .chartYAxis {
                     AxisMarks(position: .leading)
                 }
@@ -305,8 +328,10 @@ struct WeekdayProductivityChart: View {
                 Text("Gráficos disponibles en iOS 16 o superior")
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .center)
+                    .background(Color(.secondarySystemGroupedBackground))
             }
             
+            // Análisis de productividad
             VStack(alignment: .leading, spacing: 8) {
                 Text("Análisis:")
                     .font(.subheadline)
@@ -316,14 +341,12 @@ struct WeekdayProductivityChart: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
-            .padding(.horizontal)
-            .padding(.bottom, 8)
+            .padding(16)
+            .background(Color(.secondarySystemGroupedBackground))
         }
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemGray6))
-        )
+        .clipShape(RoundedRectangle(cornerRadius: 10))
         .padding(.horizontal)
+        .padding(.bottom, 8)
     }
     
     private func getMostProductiveDay() -> String {

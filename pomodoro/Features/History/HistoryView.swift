@@ -4,6 +4,7 @@ struct HistoryView: View {
     @StateObject private var viewModel = HistoryViewModel()
     @State private var showClearConfirmation = false
     @State private var viewMode: ViewMode = .list
+    @State private var showCalendar = false
     
     enum ViewMode {
         case list
@@ -17,51 +18,145 @@ struct HistoryView: View {
                     .edgesIgnoringSafeArea(.all)
                 
                 VStack(spacing: 0) {
-                    // Timeframe selector con estilo mejorado
-                    Picker("Timeframe", selection: $viewModel.selectedTimeframe) {
-                        ForEach(HistoryViewModel.Timeframe.allCases) { timeframe in
-                            Text(timeframe.rawValue).tag(timeframe)
+                    // Título y fecha en lugar del botón de calendario
+                    HStack {
+                        Text(viewModel.dateTitle)
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        
+                        Spacer()
+                        
+                        Button(action: {
+                            showCalendar = true
+                        }) {
+                            HStack(spacing: 4) {
+                                Text("Calendario")
+                                    .font(.subheadline)
+                                
+                                Image(systemName: "calendar")
+                                    .font(.footnote)
+                            }
+                            .foregroundColor(.accentColor)
                         }
                     }
-                    .pickerStyle(SegmentedPickerStyle())
-                    .padding(.horizontal)
-                    .padding(.vertical, 8)
-                    .background(Color(.secondarySystemGroupedBackground))
+                    .padding(.horizontal, 16)
+                    .padding(.top, 16)
+                    .padding(.bottom, 8)
+                    
+                    // TaskScheduleSelector en lugar del Picker de timeframe
+                    TaskScheduleSelector(
+                        selectedDate: Binding(
+                            get: { self.viewModel.selectedDate },
+                            set: { 
+                                self.viewModel.selectedDate = $0
+                                self.viewModel.isCustomDateSelected = true
+                                self.viewModel.selectSpecificDate($0)
+                            }
+                        ),
+                        isDateSelected: Binding(
+                            get: { self.viewModel.isCustomDateSelected },
+                            set: { self.viewModel.isCustomDateSelected = $0 }
+                        ),
+                        onDateSelected: { date in
+                            self.viewModel.selectSpecificDate(date)
+                        }
+                    )
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 0)
+                    
+                    Divider()
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 4)
                     
                     // Stats summary
                     SummaryCardView(viewModel: viewModel)
-                        .id("\(viewModel.selectedTimeframe)-\(viewModel.totalSessionsForSelectedTimeframe)-\(viewModel.totalMinutesForSelectedTimeframe)")
+                        .id("\(viewModel.selectedDate)-\(viewModel.totalSessionsForSelectedTimeframe)-\(viewModel.totalMinutesForSelectedTimeframe)")
                         .padding(.top, 12)
                         .padding(.bottom, 4)
                     
                     // Content based on selected view mode
                     if viewMode == .list {
                         // List of sessions
-                        List {
-                            ForEach(viewModel.sessionsByDay.keys.sorted(by: >), id: \.self) { day in
-                                if let sessions = viewModel.sessionsByDay[day] {
-                                    Section(header: Text(formatDateString(day))) {
-                                        ForEach(sessions.sorted(by: { $0.startTime > $1.startTime })) { session in
-                                            SessionRowView(session: session)
-                                        }
+                        if viewModel.sessionsForSelectedDay.isEmpty {
+                            // Vista para cuando no hay sesiones
+                            VStack(spacing: 16) {
+                                Spacer()
+                                
+                                Image(systemName: "calendar.badge.exclamationmark")
+                                    .font(.system(size: 50))
+                                    .foregroundColor(.secondary)
+                                
+                                Text("No hay sesiones para este día")
+                                    .font(.headline)
+                                    .foregroundColor(.secondary)
+                                
+                                Button(action: {
+                                    viewModel.resetToCurrentDay()
+                                }) {
+                                    Label("Ver hoy", systemImage: "calendar.day.timeline.leading")
+                                        .padding(.horizontal, 20)
+                                        .padding(.vertical, 10)
+                                }
+                                .buttonStyle(.bordered)
+                                
+                                Spacer()
+                            }
+                            .padding()
+                        } else {
+                            // Lista de sesiones para el día seleccionado
+                            List {
+                                Section {
+                                    ForEach(viewModel.sessionsForSelectedDay.sorted(by: { $0.startTime > $1.startTime })) { session in
+                                        SessionRowView(session: session)
                                     }
+                                } header: {
+                                    Text(viewModel.dateTitle)
                                 }
                             }
-                        }
-                        .listStyle(InsetGroupedListStyle())
-                        .refreshable {
-                            viewModel.refreshHistory()
+                            .listStyle(InsetGroupedListStyle())
+                            .refreshable {
+                                viewModel.refreshHistory()
+                            }
                         }
                     } else {
                         // Charts view
-                        ScrollView {
-                            ProductivityChartsView(viewModel: viewModel)
-                                .padding(.top, 4)
-                                .padding(.bottom)
-                        }
-                        .background(Color(.systemGroupedBackground))
-                        .refreshable {
-                            viewModel.refreshHistory()
+                        if viewModel.sessionsForSelectedDay.isEmpty {
+                            // Vista para cuando no hay sesiones (misma que en modo lista)
+                            VStack(spacing: 16) {
+                                Spacer()
+                                
+                                Image(systemName: "calendar.badge.exclamationmark")
+                                    .font(.system(size: 50))
+                                    .foregroundColor(.secondary)
+                                
+                                Text("No hay sesiones para este día")
+                                    .font(.headline)
+                                    .foregroundColor(.secondary)
+                                
+                                Button(action: {
+                                    viewModel.resetToCurrentDay()
+                                }) {
+                                    Label("Ver hoy", systemImage: "calendar.day.timeline.leading")
+                                        .padding(.horizontal, 20)
+                                        .padding(.vertical, 10)
+                                }
+                                .buttonStyle(.bordered)
+                                
+                                Spacer()
+                            }
+                            .padding()
+                        } else {
+                            // Gráficos con estilo de lista
+                            ScrollView {
+                                ProductivityChartsView(viewModel: viewModel)
+                                    .padding(.horizontal, 0)
+                                    .padding(.top, 8)
+                            }
+                            .background(Color(.systemGroupedBackground))
+                            .listStyle(InsetGroupedListStyle())
+                            .refreshable {
+                                viewModel.refreshHistory()
+                            }
                         }
                     }
                 }
@@ -80,6 +175,20 @@ struct HistoryView: View {
                         
                         // Menú de opciones
                         Menu {
+                            Button(action: {
+                                viewModel.resetToCurrentDay()
+                            }) {
+                                Label("Ver hoy", systemImage: "calendar.day.timeline.leading")
+                            }
+                            
+                            Button(action: {
+                                showCalendar = true
+                            }) {
+                                Label("Seleccionar fecha", systemImage: "calendar")
+                            }
+                            
+                            Divider()
+                            
                             Button(role: .destructive, action: {
                                 showClearConfirmation = true
                             }) {
@@ -97,6 +206,9 @@ struct HistoryView: View {
                     }
                 }
             }
+            .sheet(isPresented: $showCalendar) {
+                CalendarView(viewModel: viewModel)
+            }
             .alert("Borrar todo el historial", isPresented: $showClearConfirmation) {
                 Button("Cancelar", role: .cancel) { }
                 Button("Borrar", role: .destructive) {
@@ -108,29 +220,92 @@ struct HistoryView: View {
         }
         .onAppear {
             viewModel.refreshHistory() // Refresh when view appears
+            
+            // Post notification that history tab was selected
+            NotificationCenter.default.post(name: .historyTabSelected, object: nil)
         }
     }
     
-    private func formatDateString(_ dateString: String) -> String {
+    private func formatDateString(_ dateString: String, for timeframe: HistoryViewModel.Timeframe) -> String {
         // Convert "yyyy-MM-dd" to a more readable format
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
         
-        if let date = dateFormatter.date(from: dateString) {
-            // Today, Yesterday, or actual date
+        guard let date = dateFormatter.date(from: dateString) else {
+            return dateString
+        }
+        
+        let displayFormatter = DateFormatter()
+        displayFormatter.locale = Locale(identifier: "es_ES")
+        
+        // Si hay una fecha específica seleccionada, ajustar el formato
+        if viewModel.isCustomDateSelected {
+            let calendar = Calendar.current
+            if calendar.isDate(date, inSameDayAs: viewModel.selectedDate) {
+                // Si es la fecha específica seleccionada
+                if calendar.isDateInToday(date) {
+                    return "Hoy"
+                } else if calendar.isDateInYesterday(date) {
+                    return "Ayer"
+                } else {
+                    displayFormatter.dateFormat = "EEEE, d MMMM"
+                    return displayFormatter.string(from: date).capitalized
+                }
+            } else {
+                // Otras fechas en el periodo seleccionado
+                displayFormatter.dateFormat = "EEEE, d MMMM"
+                return displayFormatter.string(from: date).capitalized
+            }
+        }
+        
+        // Si no hay una fecha específica, usar el comportamiento normal por timeframe
+        switch timeframe {
+        case .daily:
+            // Para el timeframe diario: Hoy, Ayer o fecha
             if Calendar.current.isDateInToday(date) {
                 return "Hoy"
             } else if Calendar.current.isDateInYesterday(date) {
                 return "Ayer"
             } else {
-                let displayFormatter = DateFormatter()
                 displayFormatter.dateFormat = "EEEE, d MMM"
-                displayFormatter.locale = Locale(identifier: "es_ES")
+                return displayFormatter.string(from: date)
+            }
+            
+        case .weekly:
+            // Para el timeframe semanal: Nombre del día o "Hoy"/"Ayer"
+            if Calendar.current.isDateInToday(date) {
+                return "Hoy"
+            } else if Calendar.current.isDateInYesterday(date) {
+                return "Ayer"
+            } else {
+                displayFormatter.dateFormat = "EEEE"
+                let dayName = displayFormatter.string(from: date).capitalized
+                
+                // Para días de esta semana, mostrar solo el nombre del día
+                let today = Date()
+                if let startOfWeek = Calendar.current.date(from: Calendar.current.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today)),
+                   date >= startOfWeek && date <= today {
+                    return dayName
+                } else {
+                    // Para días fuera de esta semana, mostrar el nombre del día y la fecha
+                    displayFormatter.dateFormat = "d MMM"
+                    return "\(dayName), \(displayFormatter.string(from: date))"
+                }
+            }
+            
+        case .monthly:
+            // Para timeframe mensual: Día del mes (1 Enero, etc.)
+            let day = Calendar.current.component(.day, from: date)
+            
+            if Calendar.current.isDateInToday(date) {
+                return "Hoy (\(day))"
+            } else if Calendar.current.isDateInYesterday(date) {
+                return "Ayer (\(day))"
+            } else {
+                displayFormatter.dateFormat = "d MMMM"
                 return displayFormatter.string(from: date)
             }
         }
-        
-        return dateString
     }
 }
 
@@ -144,7 +319,7 @@ struct SummaryCardView: View {
                 
                 StatView(
                     title: "Sesiones",
-                    value: "\(viewModel.totalSessionsForSelectedTimeframe)",
+                    value: "\(viewModel.totalSessionsForSelectedDay)",
                     icon: "timer",
                     color: .green
                 )
@@ -154,7 +329,7 @@ struct SummaryCardView: View {
                 
                 StatView(
                     title: "Minutos",
-                    value: "\(viewModel.totalMinutesForSelectedTimeframe)",
+                    value: "\(viewModel.totalMinutesForSelectedDay)",
                     icon: "clock",
                     color: .blue
                 )
@@ -167,14 +342,27 @@ struct SummaryCardView: View {
             .cornerRadius(10)
             .padding(.horizontal)
             
-            // Información contextual según el timeframe seleccionado
-            if let mostProductiveInfo = getMostProductiveInfo() {
+            // Información contextual para el día seleccionado
+            if let productiveTime = viewModel.mostProductiveTimeOfSelectedDay {
                 HStack {
-                    Image(systemName: mostProductiveInfo.icon)
-                        .foregroundColor(mostProductiveInfo.color)
+                    Image(systemName: "clock.fill")
+                        .foregroundColor(.yellow)
                         .font(.system(size: 14))
                     
-                    Text(mostProductiveInfo.text)
+                    Text("Hora más productiva: \(translateTimeOfDay(productiveTime))")
+                        .font(.footnote)
+                        .fontWeight(.medium)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.top, 4)
+                .padding(.bottom, 2)
+            } else if viewModel.totalSessionsForSelectedDay == 0 {
+                HStack {
+                    Image(systemName: "info.circle")
+                        .foregroundColor(.secondary)
+                        .font(.system(size: 14))
+                    
+                    Text("No hay sesiones completadas en este día")
                         .font(.footnote)
                         .fontWeight(.medium)
                         .foregroundColor(.secondary)
@@ -182,56 +370,6 @@ struct SummaryCardView: View {
                 .padding(.top, 4)
                 .padding(.bottom, 2)
             }
-        }
-    }
-    
-    // Estructura para mantener la información sobre productividad
-    private struct ProductivityInfo {
-        let text: String
-        let icon: String
-        let color: Color
-    }
-    
-    // Devuelve la información contextual según el timeframe seleccionado
-    private func getMostProductiveInfo() -> ProductivityInfo? {
-        switch viewModel.selectedTimeframe {
-        case .daily:
-            // Para "Hoy", mostrar la hora más productiva
-            if let mostProductiveTime = viewModel.mostProductiveTimeOfDay {
-                return ProductivityInfo(
-                    text: "Más productivo: \(translateTimeOfDay(mostProductiveTime))",
-                    icon: "clock.fill", 
-                    color: .yellow
-                )
-            }
-            return nil
-            
-        case .weekly:
-            // Para "Esta Semana", mostrar el día más productivo
-            if let (dayName, count) = viewModel.getMostProductiveDayOfWeek() {
-                return ProductivityInfo(
-                    text: "Día más productivo: \(dayName) (\(count) sesiones)",
-                    icon: "calendar",
-                    color: .orange
-                )
-            }
-            return nil
-            
-        case .monthly:
-            // Para "Este Mes", mostrar la fecha más productiva
-            if let (date, count) = viewModel.getMostProductiveDateOfMonth() {
-                let dateFormatter = DateFormatter()
-                dateFormatter.dateFormat = "d MMM"
-                dateFormatter.locale = Locale(identifier: "es_ES")
-                let dateString = dateFormatter.string(from: date)
-                
-                return ProductivityInfo(
-                    text: "Fecha más productiva: \(dateString) (\(count) sesiones)",
-                    icon: "star.fill",
-                    color: .yellow
-                )
-            }
-            return nil
         }
     }
     

@@ -9,6 +9,10 @@ class HistoryViewModel: ObservableObject {
     @Published var stats: HistoryService.PomodoroStats = HistoryService.PomodoroStats()
     
     @Published var selectedTimeframe: Timeframe = .daily
+    @Published var selectedDate: Date = Date()
+    @Published var datesWithSessions: [Date] = []
+    @Published var isCustomDateSelected: Bool = false
+    @Published var dateTitle: String = "Hoy"
     
     enum Timeframe: String, CaseIterable, Identifiable {
         case daily = "Hoy"
@@ -55,19 +59,133 @@ class HistoryViewModel: ObservableObject {
                 self?.refreshHistory()
             }
             .store(in: &cancellables)
+            
+        // Setup timeframe selection observation
+        $selectedTimeframe
+            .sink { [weak self] timeframe in
+                self?.resetCustomDateSelection()
+                self?.refreshHistory()
+            }
+            .store(in: &cancellables)
     }
     
     func refreshHistory() {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             
-            self.dailySessions = HistoryService.shared.getSessionsForCurrentDay()
-            self.weeklySessions = HistoryService.shared.getSessionsForCurrentWeek()
-            self.monthlySessions = HistoryService.shared.getSessionsForCurrentMonth()
-            self.stats = HistoryService.shared.getStats()
+            if self.isCustomDateSelected {
+                // Si hay una fecha específica seleccionada, cargar los datos para esa fecha
+                self.loadHistoryForSelectedDate()
+            } else {
+                // De lo contrario, cargar los datos para el timeframe seleccionado
+                self.dailySessions = HistoryService.shared.getSessionsForCurrentDay()
+                self.weeklySessions = HistoryService.shared.getSessionsForCurrentWeek()
+                self.monthlySessions = HistoryService.shared.getSessionsForCurrentMonth()
+                self.stats = HistoryService.shared.getStats()
+                
+                // Actualizar el título de la fecha
+                self.updateDateTitle()
+            }
             
             // Force UI update by triggering objectWillChange
             self.objectWillChange.send()
+        }
+    }
+    
+    func loadDatesWithSessions() {
+        self.datesWithSessions = HistoryService.shared.getDatesWithSessions()
+    }
+    
+    func selectSpecificDate(_ date: Date) {
+        self.selectedDate = date
+        self.isCustomDateSelected = true
+        
+        // Cargar los datos únicamente para la fecha seleccionada
+        self.dailySessions = HistoryService.shared.getSessionsForDay(date)
+        
+        // Actualizar el título de la fecha
+        updateDateTitle()
+        
+        // Notificar a la UI
+        self.objectWillChange.send()
+    }
+    
+    func resetToCurrentDay() {
+        selectedDate = Date()
+        selectedTimeframe = .daily
+        isCustomDateSelected = false
+        refreshHistory()
+    }
+    
+    func resetToCurrentWeek() {
+        selectedDate = Date()
+        selectedTimeframe = .weekly
+        isCustomDateSelected = false
+        refreshHistory()
+    }
+    
+    func resetToCurrentMonth() {
+        selectedDate = Date()
+        selectedTimeframe = .monthly
+        isCustomDateSelected = false
+        refreshHistory()
+    }
+    
+    private func resetCustomDateSelection() {
+        if isCustomDateSelected {
+            isCustomDateSelected = false
+            selectedDate = Date()
+            updateDateTitle()
+        }
+    }
+    
+    private func loadHistoryForSelectedDate() {
+        if isCustomDateSelected {
+            switch selectedTimeframe {
+            case .daily:
+                dailySessions = HistoryService.shared.getSessionsForDay(selectedDate)
+                weeklySessions = HistoryService.shared.getSessionsForWeek(selectedDate)
+                monthlySessions = HistoryService.shared.getSessionsForMonth(selectedDate)
+            case .weekly:
+                let calendar = Calendar.current
+                let startOfWeek = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: selectedDate)) ?? selectedDate
+                let endOfWeek = calendar.date(byAdding: .day, value: 6, to: startOfWeek) ?? selectedDate
+                dailySessions = HistoryService.shared.getSessionsForDay(selectedDate)
+                weeklySessions = HistoryService.shared.getSessionsInRange(from: startOfWeek, to: endOfWeek)
+                monthlySessions = HistoryService.shared.getSessionsForMonth(selectedDate)
+            case .monthly:
+                let calendar = Calendar.current
+                let components = calendar.dateComponents([.year, .month], from: selectedDate)
+                if let startOfMonth = calendar.date(from: components),
+                   let range = calendar.range(of: .day, in: .month, for: startOfMonth),
+                   let endOfMonth = calendar.date(byAdding: .day, value: range.count - 1, to: startOfMonth) {
+                    dailySessions = HistoryService.shared.getSessionsForDay(selectedDate)
+                    weeklySessions = HistoryService.shared.getSessionsForWeek(selectedDate)
+                    monthlySessions = HistoryService.shared.getSessionsInRange(from: startOfMonth, to: endOfMonth)
+                }
+            }
+        } else {
+            // Si no hay fecha específica, usar la fecha actual
+            dailySessions = HistoryService.shared.getSessionsForCurrentDay()
+            weeklySessions = HistoryService.shared.getSessionsForCurrentWeek()
+            monthlySessions = HistoryService.shared.getSessionsForCurrentMonth()
+        }
+    }
+    
+    private func updateDateTitle() {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "es_ES")
+        
+        let calendar = Calendar.current
+        
+        if calendar.isDateInToday(selectedDate) {
+            dateTitle = "Hoy"
+        } else if calendar.isDateInYesterday(selectedDate) {
+            dateTitle = "Ayer"
+        } else {
+            formatter.dateStyle = .medium
+            formatter.timeStyle = .none
+            dateTitle = formatter.string(from: selectedDate)
         }
     }
     
@@ -278,6 +396,43 @@ class HistoryViewModel: ObservableObject {
         }
         
         return nil
+    }
+    
+    // MARK: - Computed Properties
+    
+    var totalSessionsForSelectedDay: Int {
+        return dailySessions.filter { $0.isCompleted }.count
+    }
+    
+    var totalMinutesForSelectedDay: Int {
+        let sessions = dailySessions.filter { $0.isCompleted }
+        let totalSeconds = sessions.reduce(0) { $0 + $1.duration }
+        return Int(totalSeconds / 60)
+    }
+    
+    var sessionsForSelectedDay: [PomodoroSession] {
+        return dailySessions
+    }
+    
+    // Devuelve el número de sesiones completadas para el día seleccionado
+    var selectedDaySessionsCount: Int {
+        return dailySessions.filter { $0.isCompleted }.count
+    }
+    
+    // MARK: - Helper Functions
+    
+    // Devuelve la hora más productiva del día seleccionado
+    var mostProductiveTimeOfSelectedDay: String? {
+        let completedSessions = dailySessions.filter { $0.isCompleted }
+        guard !completedSessions.isEmpty else { return nil }
+        
+        let groupedByTime = Dictionary(grouping: completedSessions) { $0.timeOfDayString }
+        
+        let mostProductiveTime = groupedByTime.max { a, b in
+            return a.value.count < b.value.count
+        }
+        
+        return mostProductiveTime?.key
     }
 }
 

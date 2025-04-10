@@ -62,10 +62,9 @@ class HistoryService {
         return getSessionsForDay(Date())
     }
     
-    func getSessionsForCurrentWeek() -> [PomodoroSession] {
+    func getSessionsForWeek(_ date: Date) -> [PomodoroSession] {
         let calendar = Calendar.current
-        let today = Date()
-        let weekDateComponents = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today)
+        let weekDateComponents = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: date)
         
         return getAllSessions().filter { session in
             let sessionComponents = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: session.startTime)
@@ -74,17 +73,58 @@ class HistoryService {
         }
     }
     
-    func getSessionsForCurrentMonth() -> [PomodoroSession] {
+    func getSessionsForCurrentWeek() -> [PomodoroSession] {
+        return getSessionsForWeek(Date())
+    }
+    
+    func getSessionsForMonth(_ date: Date) -> [PomodoroSession] {
         let calendar = Calendar.current
-        let today = Date()
-        let month = calendar.component(.month, from: today)
-        let year = calendar.component(.year, from: today)
+        let month = calendar.component(.month, from: date)
+        let year = calendar.component(.year, from: date)
         
         return getAllSessions().filter { session in
             let sessionMonth = calendar.component(.month, from: session.startTime)
             let sessionYear = calendar.component(.year, from: session.startTime)
             return sessionMonth == month && sessionYear == year
         }
+    }
+    
+    func getSessionsForCurrentMonth() -> [PomodoroSession] {
+        return getSessionsForMonth(Date())
+    }
+    
+    // Obtener todas las sesiones agrupadas por día
+    func getAllSessionsByDay() -> [String: [PomodoroSession]] {
+        let allSessions = getAllSessions()
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        
+        return Dictionary(grouping: allSessions) { session in
+            dateFormatter.string(from: session.startTime)
+        }
+    }
+    
+    // Obtener sesiones para un rango de fechas
+    func getSessionsInRange(from startDate: Date, to endDate: Date) -> [PomodoroSession] {
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: startDate)
+        let endOfDay = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: endDate))!
+        
+        return getAllSessions().filter { session in
+            session.startTime >= startOfDay && session.startTime < endOfDay
+        }
+    }
+    
+    // Obtener fechas con sesiones (para mostrar en un calendario)
+    func getDatesWithSessions() -> [Date] {
+        let allSessions = getAllSessions()
+        let calendar = Calendar.current
+        
+        let uniqueDates = Set(allSessions.map { session in
+            calendar.startOfDay(for: session.startTime)
+        })
+        
+        return Array(uniqueDates).sorted()
     }
     
     // MARK: - Stats Management
