@@ -10,8 +10,12 @@ class TimerViewModel: ObservableObject {
     @Published var showConfigUpdateMessage: Bool = false
     
     private var timer: AnyCancellable?
-    private var configObserver: AnyCancellable?
     private var configDebouncer: AnyCancellable?
+    private var cancellables = Set<AnyCancellable>()
+    
+    // Keys to observe
+    private let durationKeys = ["workTime", "shortBreakTime", "longBreakTime"]
+    private let sessionsKey = "sessionsUntilLongBreak"
     
     // Default values
     private let defaultWorkTime: Int = 25 * 60
@@ -19,11 +23,10 @@ class TimerViewModel: ObservableObject {
     private let defaultLongBreakTime: Int = 15 * 60
     private let defaultSessionsUntilLongBreak: Int = 4
     
-    private var cancellables = Set<AnyCancellable>()
-    
     init() {
         // Request notification permissions when the app starts
         NotificationService.shared.requestAuthorization()
+        
         // Initialize timer with current settings
         resetTimer()
         
@@ -32,62 +35,67 @@ class TimerViewModel: ObservableObject {
     }
     
     private func setupConfigObserver() {
-        // Create a publisher that only triggers for timer duration changes
-        let _: () = NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
-            .compactMap { notification -> (String, Double)? in
-                guard let key = notification.userInfo?["key"] as? String,
-                      let value = UserDefaults.standard.object(forKey: key) as? Double,
-                      ["workTime", "shortBreakTime", "longBreakTime"].contains(key) else {
-                    return nil
-                }
-                return (key, value)
-            }
-            .receive(on: DispatchQueue.main)
-            .debounce(for: .seconds(0.5), scheduler: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.handleConfigChange()
-            }
-            .store(in: &cancellables)
+        // Observer for timer duration keys
+        let center = NotificationCenter.default
         
-        // Observe sessions until long break separately
-        NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
-            .compactMap { notification -> Int? in
-                guard let key = notification.userInfo?["key"] as? String,
-                      key == "sessionsUntilLongBreak",
-                      let value = UserDefaults.standard.object(forKey: key) as? Int else {
-                    return nil
-                }
-                return value
-            }
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.handleSessionsConfigChange()
-            }
-            .store(in: &cancellables)
+        center.addObserver(self, selector: #selector(userDefaultsDidChange(_:)), name: UserDefaults.didChangeNotification, object: nil)
     }
     
-    private func handleConfigChange() {
+    @objc private func userDefaultsDidChange(_ notification: Notification) {
+        // Get the user defaults that changed
+        guard let userDefaults = notification.object as? UserDefaults else { return }
+        
+        // Check if any of our observed keys changed
+        var durationChanged = false
+        var sessionsChanged = false
+        
+        for key in durationKeys {
+            if userDefaults.object(forKey: key) != nil {
+                durationChanged = true
+                break
+            }
+        }
+        
+        if userDefaults.object(forKey: sessionsKey) != nil {
+            sessionsChanged = true
+        }
+        
+        // Handle the changes
+        if durationChanged {
+            DispatchQueue.main.async { [weak self] in
+                self?.handleDurationConfigChange()
+            }
+        }
+        
+        if sessionsChanged {
+            DispatchQueue.main.async { [weak self] in
+                self?.handleSessionsConfigChange()
+            }
+        }
+    }
+    
+    private func handleDurationConfigChange() {
         if isRunning {
             // If timer is running, show message that changes will apply next session
-            showConfigUpdateMessage = true
+            self.showConfigUpdateMessage = true
             
             // Auto-hide the message after 3 seconds
-            configDebouncer?.cancel()
-            configDebouncer = Timer.publish(every: 3, on: .main, in: .common)
+            self.configDebouncer?.cancel()
+            self.configDebouncer = Timer.publish(every: 3, on: .main, in: .common)
                 .autoconnect()
                 .sink { [weak self] _ in
                     self?.showConfigUpdateMessage = false
                 }
         } else {
             // If timer is not running, update immediately
-            updateTimerWithNewConfig()
+            self.updateTimerWithNewConfig()
         }
     }
     
     private func handleSessionsConfigChange() {
         // Only update the configuration without showing a message
         if !isRunning {
-            updateTimerWithNewConfig()
+            self.updateTimerWithNewConfig()
         }
     }
     
@@ -196,5 +204,9 @@ class TimerViewModel: ObservableObject {
         } else {
             return UserDefaults.standard.bool(forKey: "autoStartBreaks")
         }
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
 } 
