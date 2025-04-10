@@ -98,4 +98,10 @@
 /* Notifications Permissions */
 "notifications_disabled_message" = "Notifications are disabled. Enable them in device settings to receive timer alerts.";
 "open_settings" = "Open Settings";
-"enable_system_notifications" = "Enable Notifications"; 
+"enable_system_notifications" = "Enable Notifications";
+
+/* Notifications Content */
+"break_time_notification_title" = "Break Time!";
+"break_time_notification_body" = "You've completed your work session. Take a break.";
+"work_time_notification_title" = "Work Time!";
+"work_time_notification_body" = "Break is over. Back to work!"; 

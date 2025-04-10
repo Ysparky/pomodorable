@@ -74,8 +74,8 @@ class NotificationService: NSObject {
         guard UserDefaults.standard.bool(forKey: "notificationsEnabled") else { return }
         
         let content = UNMutableNotificationContent()
-        content.title = mode == .work ? "¡Tiempo de descanso!" : "¡Tiempo de trabajo!"
-        content.body = mode == .work ? "Has completado tu sesión de trabajo. Toma un descanso." : "El descanso ha terminado. ¡Vuelve al trabajo!"
+        content.title = mode == .work ? "break_time_notification_title".localized : "work_time_notification_title".localized
+        content.body = mode == .work ? "break_time_notification_body".localized : "work_time_notification_body".localized
         
         // Only add sound if enabled in settings
         if UserDefaults.standard.bool(forKey: "soundEnabled") {
@@ -100,11 +100,11 @@ class NotificationService: NSObject {
         let content = UNMutableNotificationContent()
         
         if isWorkMode {
-            content.title = "¡Tiempo de descanso!"
-            content.body = "Has completado tu sesión de trabajo. Toma un descanso."
+            content.title = "break_time_notification_title".localized
+            content.body = "break_time_notification_body".localized
         } else {
-            content.title = "¡Tiempo de trabajo!"
-            content.body = "El descanso ha terminado. ¡Vuelve al trabajo!"
+            content.title = "work_time_notification_title".localized
+            content.body = "work_time_notification_body".localized
         }
         
         // Only add sound if enabled in settings

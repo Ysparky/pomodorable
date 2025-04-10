@@ -98,4 +98,10 @@
 /* Notifications Permissions */
 "notifications_disabled_message" = "Las notificaciones están desactivadas. Actívalas en la configuración del dispositivo para recibir alertas del temporizador.";
 "open_settings" = "Abrir Ajustes";
-"enable_system_notifications" = "Activar Notificaciones"; 
+"enable_system_notifications" = "Activar Notificaciones";
+
+/* Notifications Content */
+"break_time_notification_title" = "¡Tiempo de descanso!";
+"break_time_notification_body" = "Has completado tu sesión de trabajo. Toma un descanso.";
+"work_time_notification_title" = "¡Tiempo de trabajo!";
+"work_time_notification_body" = "El descanso ha terminado. ¡Vuelve al trabajo!"; 

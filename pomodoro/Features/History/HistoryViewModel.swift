@@ -345,7 +345,7 @@ class HistoryViewModel: ObservableObject {
         var result: [String: (sessions: Int, minutes: Int)] = [:]
         
         // Use shortWeekdaySymbols to ensure all days are included
-        for (index, symbol) in formatter.shortWeekdaySymbols.enumerated() {
+        for (_, symbol) in formatter.shortWeekdaySymbols.enumerated() {
             result[symbol] = (0, 0)
         }
         
