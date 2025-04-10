@@ -201,6 +201,84 @@ class HistoryViewModel: ObservableObject {
         default: return ""
         }
     }
+    
+    // Obtiene el nombre completo del día en español
+    private func getFullDayOfWeekName(shortName: String) -> String {
+        switch shortName {
+        case "Lun": return "Lunes"
+        case "Mar": return "Martes"
+        case "Mié": return "Miércoles"
+        case "Jue": return "Jueves"
+        case "Vie": return "Viernes"
+        case "Sáb": return "Sábado"
+        case "Dom": return "Domingo"
+        default: return shortName
+        }
+    }
+    
+    // Devuelve el día de la semana más productivo (con mayor número de sesiones completadas)
+    func getMostProductiveDayOfWeek() -> (String, Int)? {
+        let completedSessions = weeklySessions.filter { $0.isCompleted }
+        
+        // Si no hay sesiones completadas, devuelve nil
+        if completedSessions.isEmpty {
+            return nil
+        }
+        
+        // Agrupar por día de la semana
+        let calendar = Calendar.current
+        var sessionsByDayOfWeek: [String: Int] = [:]
+        
+        for session in completedSessions {
+            let weekday = calendar.component(.weekday, from: session.startTime)
+            let dayName = getDayOfWeekName(weekday: weekday)
+            
+            sessionsByDayOfWeek[dayName, default: 0] += 1
+        }
+        
+        // Encontrar el día con más sesiones
+        if let mostProductiveDay = sessionsByDayOfWeek.max(by: { $0.value < $1.value }) {
+            let fullDayName = getFullDayOfWeekName(shortName: mostProductiveDay.key)
+            return (fullDayName, mostProductiveDay.value)
+        }
+        
+        return nil
+    }
+    
+    // Devuelve la fecha más productiva del mes (con mayor número de sesiones completadas)
+    func getMostProductiveDateOfMonth() -> (Date, Int)? {
+        let completedSessions = monthlySessions.filter { $0.isCompleted }
+        
+        // Si no hay sesiones completadas, devuelve nil
+        if completedSessions.isEmpty {
+            return nil
+        }
+        
+        // Agrupar por fecha (día específico)
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        
+        var sessionsByDate: [String: (date: Date, count: Int)] = [:]
+        
+        for session in completedSessions {
+            let dateString = dateFormatter.string(from: session.startTime)
+            
+            if let existingData = sessionsByDate[dateString] {
+                sessionsByDate[dateString] = (existingData.date, existingData.count + 1)
+            } else {
+                // Normalizar la fecha para eliminar la hora
+                let normalizedDate = Calendar.current.startOfDay(for: session.startTime)
+                sessionsByDate[dateString] = (normalizedDate, 1)
+            }
+        }
+        
+        // Encontrar la fecha con más sesiones
+        if let mostProductiveDate = sessionsByDate.max(by: { $0.value.count < $1.value.count }) {
+            return (mostProductiveDate.value.date, mostProductiveDate.value.count)
+        }
+        
+        return nil
+    }
 }
 
 // Notification for when a new Pomodoro session is added

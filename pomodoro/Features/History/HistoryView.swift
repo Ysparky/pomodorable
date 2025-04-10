@@ -12,79 +12,88 @@ struct HistoryView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
-                // Timeframe selector
-                Picker("Timeframe", selection: $viewModel.selectedTimeframe) {
-                    ForEach(HistoryViewModel.Timeframe.allCases) { timeframe in
-                        Text(timeframe.rawValue).tag(timeframe)
-                    }
-                }
-                .pickerStyle(SegmentedPickerStyle())
-                .padding()
+            ZStack {
+                Color(.systemGroupedBackground)
+                    .edgesIgnoringSafeArea(.all)
                 
-                // Stats summary card
-                SummaryCardView(viewModel: viewModel)
-                    .id("\(viewModel.selectedTimeframe)-\(viewModel.totalSessionsForSelectedTimeframe)-\(viewModel.totalMinutesForSelectedTimeframe)")
-                
-                // View mode selector
-                HStack {
-                    Spacer()
-                    Picker("", selection: $viewMode) {
-                        Image(systemName: "list.bullet").tag(ViewMode.list)
-                        Image(systemName: "chart.bar").tag(ViewMode.charts)
+                VStack(spacing: 0) {
+                    // Timeframe selector con estilo mejorado
+                    Picker("Timeframe", selection: $viewModel.selectedTimeframe) {
+                        ForEach(HistoryViewModel.Timeframe.allCases) { timeframe in
+                            Text(timeframe.rawValue).tag(timeframe)
+                        }
                     }
                     .pickerStyle(SegmentedPickerStyle())
-                    .frame(width: 120)
-                    .padding(.trailing)
-                }
-                .padding(.top, 8)
-                
-                // Content based on selected view mode
-                if viewMode == .list {
-                    // List of sessions
-                    List {
-                        ForEach(viewModel.sessionsByDay.keys.sorted(by: >), id: \.self) { day in
-                            if let sessions = viewModel.sessionsByDay[day] {
-                                Section(header: Text(formatDateString(day))) {
-                                    ForEach(sessions.sorted(by: { $0.startTime > $1.startTime })) { session in
-                                        SessionRowView(session: session)
+                    .padding(.horizontal)
+                    .padding(.vertical, 8)
+                    .background(Color(.secondarySystemGroupedBackground))
+                    
+                    // Stats summary
+                    SummaryCardView(viewModel: viewModel)
+                        .id("\(viewModel.selectedTimeframe)-\(viewModel.totalSessionsForSelectedTimeframe)-\(viewModel.totalMinutesForSelectedTimeframe)")
+                        .padding(.top, 12)
+                        .padding(.bottom, 4)
+                    
+                    // Content based on selected view mode
+                    if viewMode == .list {
+                        // List of sessions
+                        List {
+                            ForEach(viewModel.sessionsByDay.keys.sorted(by: >), id: \.self) { day in
+                                if let sessions = viewModel.sessionsByDay[day] {
+                                    Section(header: Text(formatDateString(day))) {
+                                        ForEach(sessions.sorted(by: { $0.startTime > $1.startTime })) { session in
+                                            SessionRowView(session: session)
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-                    .listStyle(InsetGroupedListStyle())
-                    .refreshable {
-                        viewModel.refreshHistory()
-                    }
-                } else {
-                    // Charts view
-                    ScrollView {
-                        ProductivityChartsView(viewModel: viewModel)
-                            .padding(.top)
-                    }
-                    .refreshable {
-                        viewModel.refreshHistory()
+                        .listStyle(InsetGroupedListStyle())
+                        .refreshable {
+                            viewModel.refreshHistory()
+                        }
+                    } else {
+                        // Charts view
+                        ScrollView {
+                            ProductivityChartsView(viewModel: viewModel)
+                                .padding(.top, 4)
+                                .padding(.bottom)
+                        }
+                        .background(Color(.systemGroupedBackground))
+                        .refreshable {
+                            viewModel.refreshHistory()
+                        }
                     }
                 }
             }
             .navigationTitle("Historial")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Menu {
-                        Button(role: .destructive, action: {
-                            showClearConfirmation = true
-                        }) {
-                            Label("Borrar todo el historial", systemImage: "trash")
+                    HStack(spacing: 16) {
+                        // View mode selector en la barra de navegación
+                        Picker("", selection: $viewMode) {
+                            Image(systemName: "list.bullet").tag(ViewMode.list)
+                            Image(systemName: "chart.xyaxis.line").tag(ViewMode.charts)
                         }
+                        .pickerStyle(SegmentedPickerStyle())
+                        .frame(width: 100)
                         
-                        Button(action: {
-                            viewModel.clearHistoryOlderThan30Days()
-                        }) {
-                            Label("Borrar anterior a 30 días", systemImage: "clock.arrow.circlepath")
+                        // Menú de opciones
+                        Menu {
+                            Button(role: .destructive, action: {
+                                showClearConfirmation = true
+                            }) {
+                                Label("Borrar todo el historial", systemImage: "trash")
+                            }
+                            
+                            Button(action: {
+                                viewModel.clearHistoryOlderThan30Days()
+                            }) {
+                                Label("Borrar anterior a 30 días", systemImage: "clock.arrow.circlepath")
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis.circle")
                         }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
                     }
                 }
             }
@@ -129,12 +138,15 @@ struct SummaryCardView: View {
     @ObservedObject var viewModel: HistoryViewModel
     
     var body: some View {
-        VStack(spacing: 16) {
-            HStack(spacing: 20) {
+        VStack(spacing: 14) {
+            HStack(spacing: 30) {
+                Spacer()
+                
                 StatView(
                     title: "Sesiones",
                     value: "\(viewModel.totalSessionsForSelectedTimeframe)",
-                    icon: "timer"
+                    icon: "timer",
+                    color: .green
                 )
                 
                 Divider()
@@ -143,27 +155,84 @@ struct SummaryCardView: View {
                 StatView(
                     title: "Minutos",
                     value: "\(viewModel.totalMinutesForSelectedTimeframe)",
-                    icon: "clock"
+                    icon: "clock",
+                    color: .blue
                 )
+                
+                Spacer()
             }
+            .padding(.horizontal)
+            .padding(.vertical, 12)
+            .background(Color(.secondarySystemGroupedBackground))
+            .cornerRadius(10)
+            .padding(.horizontal)
             
-            if let mostProductiveTime = viewModel.mostProductiveTimeOfDay {
+            // Información contextual según el timeframe seleccionado
+            if let mostProductiveInfo = getMostProductiveInfo() {
                 HStack {
-                    Image(systemName: "star.fill")
-                        .foregroundColor(.yellow)
+                    Image(systemName: mostProductiveInfo.icon)
+                        .foregroundColor(mostProductiveInfo.color)
+                        .font(.system(size: 14))
                     
-                    Text("Más productivo: \(translateTimeOfDay(mostProductiveTime))")
+                    Text(mostProductiveInfo.text)
                         .font(.footnote)
+                        .fontWeight(.medium)
                         .foregroundColor(.secondary)
                 }
+                .padding(.top, 4)
+                .padding(.bottom, 2)
             }
         }
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemGray6))
-        )
-        .padding(.horizontal)
+    }
+    
+    // Estructura para mantener la información sobre productividad
+    private struct ProductivityInfo {
+        let text: String
+        let icon: String
+        let color: Color
+    }
+    
+    // Devuelve la información contextual según el timeframe seleccionado
+    private func getMostProductiveInfo() -> ProductivityInfo? {
+        switch viewModel.selectedTimeframe {
+        case .daily:
+            // Para "Hoy", mostrar la hora más productiva
+            if let mostProductiveTime = viewModel.mostProductiveTimeOfDay {
+                return ProductivityInfo(
+                    text: "Más productivo: \(translateTimeOfDay(mostProductiveTime))",
+                    icon: "clock.fill", 
+                    color: .yellow
+                )
+            }
+            return nil
+            
+        case .weekly:
+            // Para "Esta Semana", mostrar el día más productivo
+            if let (dayName, count) = viewModel.getMostProductiveDayOfWeek() {
+                return ProductivityInfo(
+                    text: "Día más productivo: \(dayName) (\(count) sesiones)",
+                    icon: "calendar",
+                    color: .orange
+                )
+            }
+            return nil
+            
+        case .monthly:
+            // Para "Este Mes", mostrar la fecha más productiva
+            if let (date, count) = viewModel.getMostProductiveDateOfMonth() {
+                let dateFormatter = DateFormatter()
+                dateFormatter.dateFormat = "d MMM"
+                dateFormatter.locale = Locale(identifier: "es_ES")
+                let dateString = dateFormatter.string(from: date)
+                
+                return ProductivityInfo(
+                    text: "Fecha más productiva: \(dateString) (\(count) sesiones)",
+                    icon: "star.fill",
+                    color: .yellow
+                )
+            }
+            return nil
+        }
     }
     
     private func translateTimeOfDay(_ timeOfDay: String) -> String {
@@ -186,22 +255,28 @@ struct StatView: View {
     let title: String
     let value: String
     let icon: String
+    let color: Color
     
     var body: some View {
-        HStack {
+        HStack(spacing: 12) {
             Image(systemName: icon)
-                .font(.title2)
-                .foregroundColor(.accentColor)
-                .frame(width: 30)
+                .font(.title3)
+                .foregroundColor(color)
+                .frame(width: 28, height: 28)
+                .background(
+                    Circle()
+                        .fill(color.opacity(0.1))
+                )
             
-            VStack(alignment: .leading) {
+            VStack(alignment: .leading, spacing: 1) {
                 Text(title)
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
                 Text(value)
-                    .font(.title2)
+                    .font(.title3)
                     .fontWeight(.bold)
+                    .foregroundColor(.primary)
             }
         }
     }
@@ -211,30 +286,68 @@ struct SessionRowView: View {
     let session: PomodoroSession
     
     var body: some View {
-        HStack {
-            Circle()
-                .fill(session.isCompleted ? Color.green : Color.blue)
-                .frame(width: 10, height: 10)
-            
-            VStack(alignment: .leading) {
-                Text(session.isCompleted ? "Sesión Pomodoro" : "Descanso")
-                    .font(.headline)
+        HStack(spacing: 14) {
+            // Indicador de tipo de sesión
+            ZStack {
+                Circle()
+                    .fill(session.isCompleted ? Color.green.opacity(0.15) : Color.blue.opacity(0.15))
+                    .frame(width: 36, height: 36)
                 
-                Text("\(session.durationString) • \(formatTime(session.startTime))")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                Image(systemName: session.isCompleted ? "checkmark.circle.fill" : "cup.and.saucer.fill")
+                    .font(.system(size: 18))
+                    .foregroundColor(session.isCompleted ? .green : .blue)
+            }
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(session.isCompleted ? "Sesión Pomodoro" : "Descanso")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                
+                HStack(spacing: 6) {
+                    Image(systemName: "clock")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                    
+                    Text("\(session.durationString)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    Text("•")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    Text(formatTime(session.startTime))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
             }
             
             Spacer()
             
-            Image(systemName: session.isCompleted ? "checkmark.circle" : "cup.and.saucer")
-                .foregroundColor(session.isCompleted ? .green : .blue)
+            // Fecha de la sesión si es más de 1 día atrás
+            if !Calendar.current.isDateInToday(session.startTime) && !Calendar.current.isDateInYesterday(session.startTime) {
+                Text(formatShortDate(session.startTime))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(Color(.secondarySystemGroupedBackground))
+                    .cornerRadius(8)
+            }
         }
+        .padding(.vertical, 4)
     }
     
     private func formatTime(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.timeStyle = .short
+        return formatter.string(from: date)
+    }
+    
+    private func formatShortDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "d MMM"
+        formatter.locale = Locale(identifier: "es_ES")
         return formatter.string(from: date)
     }
 }
