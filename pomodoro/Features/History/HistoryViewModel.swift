@@ -132,6 +132,75 @@ class HistoryViewModel: ObservableObject {
         
         return mostProductiveEntry?.key
     }
+    
+    // MARK: - Chart Data Helpers
+    
+    // Devuelve estadísticas de productividad por día de la semana (para identificar patrones semanales)
+    var productivityByDayOfWeek: [String: (sessions: Int, minutes: Int)] {
+        let completedSessions = monthlySessions.filter { $0.isCompleted }
+        let calendar = Calendar.current
+        
+        // Inicializando con los días de la semana para asegurar que todos estén incluidos
+        var result: [String: (sessions: Int, minutes: Int)] = [
+            "Lun": (0, 0), "Mar": (0, 0), "Mié": (0, 0), "Jue": (0, 0),
+            "Vie": (0, 0), "Sáb": (0, 0), "Dom": (0, 0)
+        ]
+        
+        // Agrupando por día de la semana
+        for session in completedSessions {
+            let weekday = calendar.component(.weekday, from: session.startTime)
+            let dayName = getDayOfWeekName(weekday: weekday)
+            let minutes = Int(session.duration / 60)
+            
+            if var existing = result[dayName] {
+                existing.sessions += 1
+                existing.minutes += minutes
+                result[dayName] = existing
+            }
+        }
+        
+        return result
+    }
+    
+    // Devuelve la duración promedio de las sesiones por día
+    var averageSessionDurationByDay: [String: Double] {
+        let sessionsByDay = Dictionary(grouping: sessionsForSelectedTimeframe.filter { $0.isCompleted }) { $0.dayString }
+        
+        return sessionsByDay.mapValues { sessions in
+            let totalDuration = sessions.reduce(0) { $0 + $1.duration }
+            return totalDuration / Double(sessions.count) / 60 // Convertir a minutos
+        }
+    }
+    
+    // Devuelve el número de sesiones completadas por día para un rango de fechas
+    func completedSessionsCountForRange(_ dates: [Date]) -> [Int] {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        
+        return dates.map { date in
+            let dateString = dateFormatter.string(from: date)
+            let sessionsForDate = sessionsForSelectedTimeframe.filter { 
+                $0.dayString == dateString && $0.isCompleted 
+            }
+            return sessionsForDate.count
+        }
+    }
+    
+    // MARK: - Helper Functions
+    
+    private func getDayOfWeekName(weekday: Int) -> String {
+        // weekday: 1 = Domingo, 2 = Lunes, ..., 7 = Sábado
+        switch weekday {
+        case 1: return "Dom"
+        case 2: return "Lun"
+        case 3: return "Mar"
+        case 4: return "Mié"
+        case 5: return "Jue"
+        case 6: return "Vie"
+        case 7: return "Sáb"
+        default: return ""
+        }
+    }
 }
 
 // Notification for when a new Pomodoro session is added

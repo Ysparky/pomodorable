@@ -3,6 +3,12 @@ import SwiftUI
 struct HistoryView: View {
     @StateObject private var viewModel = HistoryViewModel()
     @State private var showClearConfirmation = false
+    @State private var viewMode: ViewMode = .list
+    
+    enum ViewMode {
+        case list
+        case charts
+    }
     
     var body: some View {
         NavigationView {
@@ -20,21 +26,46 @@ struct HistoryView: View {
                 SummaryCardView(viewModel: viewModel)
                     .id("\(viewModel.selectedTimeframe)-\(viewModel.totalSessionsForSelectedTimeframe)-\(viewModel.totalMinutesForSelectedTimeframe)")
                 
-                // List of sessions
-                List {
-                    ForEach(viewModel.sessionsByDay.keys.sorted(by: >), id: \.self) { day in
-                        if let sessions = viewModel.sessionsByDay[day] {
-                            Section(header: Text(formatDateString(day))) {
-                                ForEach(sessions.sorted(by: { $0.startTime > $1.startTime })) { session in
-                                    SessionRowView(session: session)
+                // View mode selector
+                HStack {
+                    Spacer()
+                    Picker("", selection: $viewMode) {
+                        Image(systemName: "list.bullet").tag(ViewMode.list)
+                        Image(systemName: "chart.bar").tag(ViewMode.charts)
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                    .frame(width: 120)
+                    .padding(.trailing)
+                }
+                .padding(.top, 8)
+                
+                // Content based on selected view mode
+                if viewMode == .list {
+                    // List of sessions
+                    List {
+                        ForEach(viewModel.sessionsByDay.keys.sorted(by: >), id: \.self) { day in
+                            if let sessions = viewModel.sessionsByDay[day] {
+                                Section(header: Text(formatDateString(day))) {
+                                    ForEach(sessions.sorted(by: { $0.startTime > $1.startTime })) { session in
+                                        SessionRowView(session: session)
+                                    }
                                 }
                             }
                         }
                     }
-                }
-                .listStyle(InsetGroupedListStyle())
-                .refreshable {
-                    viewModel.refreshHistory()
+                    .listStyle(InsetGroupedListStyle())
+                    .refreshable {
+                        viewModel.refreshHistory()
+                    }
+                } else {
+                    // Charts view
+                    ScrollView {
+                        ProductivityChartsView(viewModel: viewModel)
+                            .padding(.top)
+                    }
+                    .refreshable {
+                        viewModel.refreshHistory()
+                    }
                 }
             }
             .navigationTitle("Historial")
