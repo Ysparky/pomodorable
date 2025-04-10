@@ -1,5 +1,6 @@
 import Foundation
 import UserNotifications
+import UIKit
 
 enum TimerMode {
     case work
@@ -9,20 +10,63 @@ enum TimerMode {
 class NotificationService: NSObject {
     static let shared = NotificationService()
     
+    // Notification for when the authorization status changes
+    static let notificationAuthorizationChangedNotification = Notification.Name("NotificationAuthorizationChanged")
+    
+    // Notification authorization status
+    @Published var authorizationStatus: UNAuthorizationStatus = .notDetermined
+    
     private override init() {
         super.init()
         // Set the notification delegate when the service is initialized
         UNUserNotificationCenter.current().delegate = self
+        
+        // Check the current authorization status
+        checkAuthorizationStatus()
+    }
+    
+    func checkAuthorizationStatus() {
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            DispatchQueue.main.async {
+                self.authorizationStatus = settings.authorizationStatus
+                
+                // If the user has enabled notifications in the settings, 
+                // but they are disabled in the app, activate them
+                if settings.authorizationStatus == .authorized {
+                    if !UserDefaults.standard.bool(forKey: "notificationsEnabled") {
+                        UserDefaults.standard.set(true, forKey: "notificationsEnabled")
+                    }
+                }
+                
+                // Notify the status change
+                NotificationCenter.default.post(name: NotificationService.notificationAuthorizationChangedNotification, object: settings.authorizationStatus)
+            }
+        }
     }
     
     func requestAuthorization() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-            if granted {
-                print("Notificación autorizada")
-            } else if let error = error {
-                print("Error al autorizar notificaciones: \(error.localizedDescription)")
+            DispatchQueue.main.async {
+                if granted {
+                    print("Notification authorized")
+                    // If authorized, activate notifications in the app automatically
+                    UserDefaults.standard.set(true, forKey: "notificationsEnabled")
+                } else if let error = error {
+                    print("Error authorizing notifications: \(error.localizedDescription)")
+                    // If denied, disable notifications in the app
+                    UserDefaults.standard.set(false, forKey: "notificationsEnabled")
+                }
+                
+                // Update the authorization status
+                self.checkAuthorizationStatus()
             }
         }
+    }
+    
+    // Method to open the system notification settings
+    func openAppSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
     }
     
     func scheduleNotification(for mode: TimerMode) {

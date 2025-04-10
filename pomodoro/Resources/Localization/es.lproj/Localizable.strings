@@ -93,4 +93,9 @@
 "chart_ios16_required" = "Gráficos disponibles en iOS 16 o superior";
 "most_productive_day_message" = "Tu día más productivo es %@ con %d sesiones completadas.";
 "no_productivity_data" = "Aún no hay suficientes datos para determinar tu día más productivo.";
-"day" = "Día"; 
+"day" = "Día";
+
+/* Notifications Permissions */
+"notifications_disabled_message" = "Las notificaciones están desactivadas. Actívalas en la configuración del dispositivo para recibir alertas del temporizador.";
+"open_settings" = "Abrir Ajustes";
+"enable_system_notifications" = "Activar Notificaciones"; 

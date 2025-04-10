@@ -85,7 +85,52 @@ struct SettingsView: View {
             
             Section(header: Text("notifications".localized)) {
                 Toggle("enable_sounds".localized, isOn: $soundEnabled)
-                Toggle("enable_notifications".localized, isOn: $notificationsEnabled)
+                
+                // The Toggle of notifications only works if the system permission has already been granted
+                if viewModel.notificationStatus == .authorized {
+                    Toggle("enable_notifications".localized, isOn: $notificationsEnabled)
+                        .onChange(of: notificationsEnabled) { oldValue, newValue in
+                            if newValue {
+                                // If the user activates notifications, check if they have permissions
+                                viewModel.checkNotificationStatus()
+                            }
+                        }
+                } else {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("enable_notifications".localized)
+                            Spacer()
+                            // Toggle disabled if there is no system permission
+                            Toggle("", isOn: .constant(false))
+                                .disabled(true)
+                        }
+                        
+                        // Message and button to go to the system settings
+                        if viewModel.notificationStatus == .denied {
+                            Text("notifications_disabled_message".localized)
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
+                            
+                            Button(action: {
+                                viewModel.openSystemSettings()
+                            }) {
+                                Text("open_settings".localized)
+                                    .font(.callout)
+                                    .foregroundColor(.accentColor)
+                            }
+                            .padding(.top, 4)
+                        } else if viewModel.notificationStatus == .notDetermined {
+                            Button(action: {
+                                viewModel.requestNotificationPermission()
+                            }) {
+                                Text("enable_system_notifications".localized)
+                                    .font(.callout)
+                                    .foregroundColor(.accentColor)
+                            }
+                            .padding(.top, 4)
+                        }
+                    }
+                }
             }
             
             Section(header: Text("auto_start".localized)) {
@@ -204,6 +249,10 @@ struct SettingsView: View {
                 },
                 secondaryButton: .cancel(Text("cancel".localized))
             )
+        }
+        .onAppear {
+            // Check the permission status when the view appears
+            viewModel.checkNotificationStatus()
         }
     }
     
