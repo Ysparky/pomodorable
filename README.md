@@ -2,7 +2,7 @@
 
 A feature-rich, modern iOS application for time management using the Pomodoro Technique, helping users enhance productivity by breaking work into intervals separated by short breaks.
 
-![Pomodoro App](https://example.com/pomodoro-app-screenshot.png)
+![Pomodoro App](demo.png)
 
 ## Features
 
