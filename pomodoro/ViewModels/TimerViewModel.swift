@@ -7,10 +7,11 @@ class TimerViewModel: ObservableObject {
     @Published var isWorkMode: Bool = true
     @Published var progress: Double = 1.0
     @Published var completedSessions: Int = 0
-    @Published var showConfigUpdateAlert: Bool = false
+    @Published var showConfigUpdateMessage: Bool = false
     
     private var timer: AnyCancellable?
     private var configObserver: AnyCancellable?
+    private var configDebouncer: AnyCancellable?
     
     // Default values
     private let defaultWorkTime: Int = 25 * 60
@@ -50,6 +51,7 @@ class TimerViewModel: ObservableObject {
             sessionsUntilLongBreakPublisher
         )
         .receive(on: DispatchQueue.main)
+        .debounce(for: .seconds(0.5), scheduler: DispatchQueue.main)
         .sink { [weak self] _ in
             self?.handleConfigChange()
         }
@@ -57,14 +59,24 @@ class TimerViewModel: ObservableObject {
     
     private func handleConfigChange() {
         if isRunning {
-            // If timer is running, show alert that changes will apply next session
-            DispatchQueue.main.async { [weak self] in
-                self?.showConfigUpdateAlert = true
-            }
+            // If timer is running, show message that changes will apply next session
+            showConfigUpdateMessage = true
+            
+            // Auto-hide the message after 3 seconds
+            configDebouncer?.cancel()
+            configDebouncer = Timer.publish(every: 3, on: .main, in: .common)
+                .autoconnect()
+                .sink { [weak self] _ in
+                    self?.showConfigUpdateMessage = false
+                }
         } else {
             // If timer is not running, update immediately
             updateTimerWithNewConfig()
         }
+    }
+    
+    func dismissConfigMessage() {
+        showConfigUpdateMessage = false
     }
     
     private func updateTimerWithNewConfig() {

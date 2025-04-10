@@ -6,59 +6,63 @@ struct TimerView: View {
     @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
-        VStack(spacing: 20) {
-            // Session Counter
-            Text("Sesiones completadas: \(viewModel.completedSessions)")
-                .font(.headline)
-                .foregroundColor(.secondary)
-            
-            // Timer Display
-            ZStack {
-                Circle()
-                    .stroke(lineWidth: 20)
-                    .opacity(0.3)
-                    .foregroundColor(colorScheme == .dark ? .white : .gray)
+        ZStack {
+            VStack(spacing: 20) {
+                // Session Counter
+                Text("Sesiones completadas: \(viewModel.completedSessions)")
+                    .font(.headline)
+                    .foregroundColor(.secondary)
                 
-                Circle()
-                    .trim(from: 0.0, to: viewModel.progress)
-                    .stroke(style: StrokeStyle(lineWidth: 20, lineCap: .round, lineJoin: .round))
-                    .foregroundColor(viewModel.isWorkMode ? colorService.colors.workColor : colorService.colors.breakColor)
-                    .rotationEffect(Angle(degrees: 270.0))
-                    .animation(.linear, value: viewModel.progress)
+                // Timer Display
+                ZStack {
+                    Circle()
+                        .stroke(lineWidth: 20)
+                        .opacity(0.3)
+                        .foregroundColor(colorScheme == .dark ? .white : .gray)
+                    
+                    Circle()
+                        .trim(from: 0.0, to: viewModel.progress)
+                        .stroke(style: StrokeStyle(lineWidth: 20, lineCap: .round, lineJoin: .round))
+                        .foregroundColor(viewModel.isWorkMode ? colorService.colors.workColor : colorService.colors.breakColor)
+                        .rotationEffect(Angle(degrees: 270.0))
+                        .animation(.linear, value: viewModel.progress)
+                    
+                    VStack {
+                        Text(viewModel.timeString)
+                            .font(.system(size: 60, weight: .bold, design: .rounded))
+                            .foregroundColor(colorScheme == .dark ? .white : .black)
+                        Text(viewModel.modeText)
+                            .font(.title2)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .frame(width: 300, height: 300)
+                .padding()
                 
-                VStack {
-                    Text(viewModel.timeString)
-                        .font(.system(size: 60, weight: .bold, design: .rounded))
-                        .foregroundColor(colorScheme == .dark ? .white : .black)
-                    Text(viewModel.modeText)
-                        .font(.title2)
-                        .foregroundColor(.secondary)
+                // Control Buttons
+                HStack(spacing: 30) {
+                    Button(action: viewModel.resetTimer) {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.title)
+                            .foregroundColor(colorScheme == .dark ? .white : .black)
+                    }
+                    
+                    Button(action: viewModel.toggleTimer) {
+                        Image(systemName: viewModel.isRunning ? "pause.fill" : "play.fill")
+                            .font(.title)
+                            .foregroundColor(colorScheme == .dark ? .white : .black)
+                    }
                 }
             }
-            .frame(width: 300, height: 300)
             .padding()
+            .background(colorScheme == .dark ? Color.black : Color.white)
             
-            // Control Buttons
-            HStack(spacing: 30) {
-                Button(action: viewModel.resetTimer) {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.title)
-                        .foregroundColor(colorScheme == .dark ? .white : .black)
-                }
-                
-                Button(action: viewModel.toggleTimer) {
-                    Image(systemName: viewModel.isRunning ? "pause.fill" : "play.fill")
-                        .font(.title)
-                        .foregroundColor(colorScheme == .dark ? .white : .black)
-                }
-            }
-        }
-        .padding()
-        .background(colorScheme == .dark ? Color.black : Color.white)
-        .alert("Cambios en la configuración", isPresented: $viewModel.showConfigUpdateAlert) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text("Los cambios en la configuración se aplicarán en la siguiente sesión.")
+            // Snackbar overlay
+            SnackbarView(
+                message: "Los cambios se aplicarán en la siguiente sesión",
+                isVisible: viewModel.showConfigUpdateMessage,
+                onDismiss: viewModel.dismissConfigMessage
+            )
         }
     }
 }
