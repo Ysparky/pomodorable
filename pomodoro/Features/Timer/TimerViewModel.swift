@@ -299,16 +299,10 @@ class TimerViewModel: ObservableObject {
             timeRemaining = newTimeRemainingInt
             updateProgress()
             
-            // If we reach zero, switch mode and send notification if user is not viewing timer tab
+            // If we reach zero, switch mode
             if timeRemaining <= 0 {
                 pauseTimer()
                 accumulatedTime = 0
-                
-                // Check if app is in foreground but user is on a different tab
-                if UIApplication.shared.applicationState == .active && !isCurrentlyViewingTimerTab() {
-                    NotificationService.shared.scheduleNotification(for: isWorkMode ? .work : .break_)
-                }
-                
                 switchMode()
             }
         }
@@ -343,8 +337,14 @@ class TimerViewModel: ObservableObject {
                 }
             }
             
-            // Only send notification if user is not viewing timer tab or app is in background
-            if UIApplication.shared.applicationState == .background || !isCurrentlyViewingTimerTab() {
+            // Always send notification, even when the app is in the foreground but user is on a different tab
+            if UIApplication.shared.applicationState == .active {
+                // Check if we're in the timer tab - if not, show local notification
+                if !isTimerTabSelected() {
+                    NotificationService.shared.scheduleNotification(for: .work)
+                }
+            } else {
+                // App is in background, always show notification
                 NotificationService.shared.scheduleNotification(for: .work)
             }
         } else {
@@ -364,8 +364,14 @@ class TimerViewModel: ObservableObject {
                 }
             }
             
-            // Only send notification if user is not viewing timer tab or app is in background
-            if UIApplication.shared.applicationState == .background || !isCurrentlyViewingTimerTab() {
+            // Always send notification, even when the app is in the foreground but user is on a different tab
+            if UIApplication.shared.applicationState == .active {
+                // Check if we're in the timer tab - if not, show local notification
+                if !isTimerTabSelected() {
+                    NotificationService.shared.scheduleNotification(for: .break_)
+                }
+            } else {
+                // App is in background, always show notification
                 NotificationService.shared.scheduleNotification(for: .break_)
             }
         }
@@ -418,9 +424,10 @@ class TimerViewModel: ObservableObject {
         completedSessions = todaySessions.filter({ $0.isCompleted }).count
     }
     
-    // Helper to check if the timer tab is the current active tab
-    private func isCurrentlyViewingTimerTab() -> Bool {
-        // Using a UserDefaults flag set by ContentView to track active tab
-        return UserDefaults.standard.integer(forKey: "active_tab") == 0 // 0 is timer tab
+    // Helper method to determine if the timer tab is currently selected
+    private func isTimerTabSelected() -> Bool {
+        // Get the current tab index from UserDefaults
+        // TabView stores its selection index in UserDefaults
+        return UserDefaults.standard.integer(forKey: "selectedTab") == 0
     }
 } 

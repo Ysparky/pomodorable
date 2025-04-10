@@ -6,10 +6,14 @@ enum TimerMode {
     case break_
 }
 
-class NotificationService {
+class NotificationService: NSObject {
     static let shared = NotificationService()
     
-    private init() {}
+    private override init() {
+        super.init()
+        // Set the notification delegate when the service is initialized
+        UNUserNotificationCenter.current().delegate = self
+    }
     
     func requestAuthorization() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
@@ -34,15 +38,10 @@ class NotificationService {
             content.sound = .default
         }
         
-        // For in-app notifications when in different tab (foreground), deliver immediately
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
         let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
         
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("Error al programar notificación: \(error.localizedDescription)")
-            }
-        }
+        UNUserNotificationCenter.current().add(request)
     }
     
     // Function to schedule a notification that will trigger when the timer ends
@@ -73,15 +72,22 @@ class NotificationService {
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: TimeInterval(timeRemaining), repeats: false)
         let request = UNNotificationRequest(identifier: "timerEndNotification", content: content, trigger: trigger)
         
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("Error al programar notificación: \(error.localizedDescription)")
-            }
-        }
+        UNUserNotificationCenter.current().add(request)
     }
     
     // Cancel scheduled timer notifications
     func cancelPendingTimerNotifications() {
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["timerEndNotification"])
+    }
+}
+
+// Extension to handle notification presentation when app is in foreground
+extension NotificationService: UNUserNotificationCenterDelegate {
+    // This method allows the notification to be shown even when the app is in the foreground
+    func userNotificationCenter(_ center: UNUserNotificationCenter, 
+                              willPresent notification: UNNotification, 
+                              withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        // Show the notification with banner and sound when in foreground
+        completionHandler([.banner, .sound, .badge])
     }
 } 
