@@ -134,4 +134,17 @@ extension NotificationService: UNUserNotificationCenterDelegate {
         // Show the notification with banner and sound when in foreground
         completionHandler([.banner, .sound, .badge])
     }
+    
+    // This method handles the user's response to a delivered notification
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                               didReceive response: UNNotificationResponse,
+                               withCompletionHandler completionHandler: @escaping () -> Void) {
+        // Set the selected tab to Timer tab (0) when app is opened from notification
+        UserDefaults.standard.set(0, forKey: "selectedTab")
+        
+        // Cancel any pending notifications since the user is now in the app
+        cancelPendingTimerNotifications()
+        
+        completionHandler()
+    }
 } 

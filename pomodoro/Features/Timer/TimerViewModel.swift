@@ -110,8 +110,11 @@ class TimerViewModel: ObservableObject {
             // If the time finished while in background
             if timeRemaining <= 0 {
                 timeRemaining = 0
-                // Switch mode in the next timer cycle
+                // Switch mode in the next timer cycle without showing notification
+                // since the user is already in the app
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    // Set a flag to indicate we're coming from background to foreground
+                    UserDefaults.standard.set(true, forKey: "comingFromBackground")
                     self.switchMode()
                 }
             } else {
@@ -318,6 +321,9 @@ class TimerViewModel: ObservableObject {
         // Cancel pending notifications when switching modes
         NotificationService.shared.cancelPendingTimerNotifications()
         
+        // Check if we're coming from background
+        let comingFromBackground = UserDefaults.standard.bool(forKey: "comingFromBackground")
+        
         if isWorkMode {
             completedSessions += 1
             
@@ -337,15 +343,18 @@ class TimerViewModel: ObservableObject {
                 }
             }
             
-            // Always send notification, even when the app is in the foreground but user is on a different tab
-            if UIApplication.shared.applicationState == .active {
-                // Check if we're in the timer tab - if not, show local notification
-                if !isTimerTabSelected() {
+            // Only show notifications if we're not coming from background
+            if !comingFromBackground {
+                // Always send notification, even when the app is in the foreground but user is on a different tab
+                if UIApplication.shared.applicationState == .active {
+                    // Check if we're in the timer tab - if not, show local notification
+                    if !isTimerTabSelected() {
+                        NotificationService.shared.scheduleNotification(for: .work)
+                    }
+                } else {
+                    // App is in background, always show notification
                     NotificationService.shared.scheduleNotification(for: .work)
                 }
-            } else {
-                // App is in background, always show notification
-                NotificationService.shared.scheduleNotification(for: .work)
             }
         } else {
             // Record completed break session (we don't count breaks in completedSessions)
@@ -364,16 +373,24 @@ class TimerViewModel: ObservableObject {
                 }
             }
             
-            // Always send notification, even when the app is in the foreground but user is on a different tab
-            if UIApplication.shared.applicationState == .active {
-                // Check if we're in the timer tab - if not, show local notification
-                if !isTimerTabSelected() {
+            // Only show notifications if we're not coming from background
+            if !comingFromBackground {
+                // Always send notification, even when the app is in the foreground but user is on a different tab
+                if UIApplication.shared.applicationState == .active {
+                    // Check if we're in the timer tab - if not, show local notification
+                    if !isTimerTabSelected() {
+                        NotificationService.shared.scheduleNotification(for: .break_)
+                    }
+                } else {
+                    // App is in background, always show notification
                     NotificationService.shared.scheduleNotification(for: .break_)
                 }
-            } else {
-                // App is in background, always show notification
-                NotificationService.shared.scheduleNotification(for: .break_)
             }
+        }
+        
+        // Reset the flag after use
+        if comingFromBackground {
+            UserDefaults.standard.set(false, forKey: "comingFromBackground")
         }
         
         isWorkMode.toggle()
