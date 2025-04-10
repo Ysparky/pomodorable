@@ -9,6 +9,9 @@ class TimerViewModel: ObservableObject {
     @Published var completedSessions: Int = 0
     @Published var showConfigUpdateMessage: Bool = false
     
+    // Store the initial total time for the current session to calculate progress
+    private var currentSessionTotalTime: Int = 25 * 60
+    
     private var timer: AnyCancellable?
     private var configDebouncer: AnyCancellable?
     private var cancellables = Set<AnyCancellable>()
@@ -75,6 +78,7 @@ class TimerViewModel: ObservableObject {
                 .sink { [weak self] _ in
                     self?.showConfigUpdateMessage = false
                 }
+            // Do not update progress while session is running
         } else {
             // If timer is not running, update immediately
             self.updateTimerWithNewConfig()
@@ -99,6 +103,9 @@ class TimerViewModel: ObservableObject {
         // Update time remaining based on current mode
         timeRemaining = isWorkMode ? getWorkTime() : getBreakTime()
         
+        // Update the current session total time to match the new settings
+        currentSessionTotalTime = timeRemaining
+        
         // Update progress
         updateProgress()
     }
@@ -116,6 +123,8 @@ class TimerViewModel: ObservableObject {
     func toggleTimer() {
         isRunning.toggle()
         if isRunning {
+            // Store the total time when starting the timer
+            currentSessionTotalTime = isWorkMode ? getWorkTime() : getBreakTime()
             startTimer()
         } else {
             timer?.cancel()
@@ -127,6 +136,8 @@ class TimerViewModel: ObservableObject {
         isRunning = false
         isWorkMode = true
         timeRemaining = getWorkTime()
+        // Reset the current session total time
+        currentSessionTotalTime = timeRemaining
         progress = 1.0
     }
     
@@ -145,8 +156,9 @@ class TimerViewModel: ObservableObject {
     }
     
     private func updateProgress() {
-        let totalTime = isWorkMode ? getWorkTime() : getBreakTime()
-        progress = Double(timeRemaining) / Double(totalTime)
+        // Use the stored total time for the current session rather than recalculating
+        // This ensures that changes to settings don't affect the progress display mid-session
+        progress = Double(timeRemaining) / Double(currentSessionTotalTime)
     }
     
     private func switchMode() {
@@ -159,6 +171,8 @@ class TimerViewModel: ObservableObject {
         
         isWorkMode.toggle()
         timeRemaining = isWorkMode ? getWorkTime() : getBreakTime()
+        // Update the current session total time for the new session
+        currentSessionTotalTime = timeRemaining
         progress = 1.0
         
         // Auto-start next timer if enabled
