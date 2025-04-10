@@ -8,7 +8,7 @@ struct CalendarView: View {
     @State private var selectedMonth = Date()
 
     private let calendar = Calendar.current
-    private var daysOfWeek: [String] {
+    private var daysOfWeek: [DayOfWeek] {
         let formatter = DateFormatter()
         formatter.locale = Locale.current
         var shortWeekdaySymbols = formatter.veryShortWeekdaySymbols ?? ["L", "M", "X", "J", "V", "S", "D"]
@@ -19,7 +19,16 @@ struct CalendarView: View {
             shortWeekdaySymbols.append(sunday)
         }
         
-        return shortWeekdaySymbols
+        // Create an array of DayOfWeek structs with unique IDs
+        return shortWeekdaySymbols.enumerated().map { index, symbol in
+            DayOfWeek(id: index, symbol: symbol)
+        }
+    }
+    
+    // Struct to ensure unique identifiers for days of week
+    struct DayOfWeek: Identifiable {
+        let id: Int
+        let symbol: String
     }
 
     var body: some View {
@@ -56,8 +65,8 @@ struct CalendarView: View {
 
                 // Day headers
                 HStack(spacing: 0) {
-                    ForEach(daysOfWeek, id: \.self) { day in
-                        Text(day)
+                    ForEach(daysOfWeek) { day in
+                        Text(day.symbol)
                             .font(.caption)
                             .fontWeight(.bold)
                             .foregroundColor(.secondary)
