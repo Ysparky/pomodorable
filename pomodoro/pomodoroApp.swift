@@ -15,6 +15,7 @@ struct pomodoroApp: App {
         WindowGroup {
             ContentView()
                 .preferredColorScheme(themeService.currentTheme.colorScheme)
+                .environmentObject(themeService)
         }
     }
 }

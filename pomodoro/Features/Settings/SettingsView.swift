@@ -10,8 +10,7 @@ struct SettingsView: View {
     @AppStorage("autoStartBreaks") private var autoStartBreaks: Bool = false
     @AppStorage("autoStartPomodoros") private var autoStartPomodoros: Bool = false
     
-    @StateObject private var themeService = ThemeService.shared
-    @StateObject private var colorService = ColorService.shared
+    @StateObject private var viewModel = SettingsViewModel()
     
     @State private var showResetConfirmAlert = false
     
@@ -66,7 +65,7 @@ struct SettingsView: View {
             }
             
             Section(header: Text("Apariencia")) {
-                Picker("Tema", selection: $themeService.currentTheme) {
+                Picker("Tema", selection: $viewModel.themeService.currentTheme) {
                     ForEach(AppTheme.allCases) { theme in
                         Text(theme.displayName).tag(theme)
                     }
@@ -82,11 +81,11 @@ struct SettingsView: View {
                         Text("Trabajo")
                         Spacer()
                         ColorPicker("", selection: Binding(
-                            get: { colorService.colors.workColor },
+                            get: { viewModel.colorService.colors.workColor },
                             set: { newColor in
-                                var colors = colorService.colors
+                                var colors = viewModel.colorService.colors
                                 colors.workColor = newColor
-                                colorService.colors = colors
+                                viewModel.colorService.colors = colors
                             }
                         ))
                     }
@@ -95,11 +94,11 @@ struct SettingsView: View {
                         Text("Descanso")
                         Spacer()
                         ColorPicker("", selection: Binding(
-                            get: { colorService.colors.breakColor },
+                            get: { viewModel.colorService.colors.breakColor },
                             set: { newColor in
-                                var colors = colorService.colors
+                                var colors = viewModel.colorService.colors
                                 colors.breakColor = newColor
-                                colorService.colors = colors
+                                viewModel.colorService.colors = colors
                             }
                         ))
                     }
@@ -143,8 +142,8 @@ struct SettingsView: View {
     }
     
     private func resetToDefaultSettings() {
-        // Call the method in SettingsService
-        SettingsService.shared.resetToDefaults()
+        // Call the method in ViewModel
+        viewModel.resetToDefaultSettings()
         
         // Update local state to reflect the default values
         workTime = 25
@@ -156,12 +155,9 @@ struct SettingsView: View {
         notificationsEnabled = true
         soundEnabled = true
         
-        // Update theme in UI
-        themeService.currentTheme = .system
-        
         // The ColorService is already updated by the SettingsService but we need to
-        // trigger a UI update by accessing the colorService's objectWillChange
-        colorService.objectWillChange.send()
+        // trigger a UI update
+        viewModel.colorService.objectWillChange.send()
     }
 }
 
