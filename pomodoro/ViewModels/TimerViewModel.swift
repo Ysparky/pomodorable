@@ -7,8 +7,10 @@ class TimerViewModel: ObservableObject {
     @Published var isWorkMode: Bool = true
     @Published var progress: Double = 1.0
     @Published var completedSessions: Int = 0
+    @Published var showConfigUpdateAlert: Bool = false
     
     private var timer: AnyCancellable?
+    private var configObserver: AnyCancellable?
     
     // Default values
     private let defaultWorkTime: Int = 25 * 60
@@ -21,6 +23,59 @@ class TimerViewModel: ObservableObject {
         NotificationService.shared.requestAuthorization()
         // Initialize timer with current settings
         resetTimer()
+        
+        // Observe configuration changes
+        setupConfigObserver()
+    }
+    
+    private func setupConfigObserver() {
+        // Create a publisher that combines all configuration changes
+        let workTimePublisher = NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
+            .map { _ in UserDefaults.standard.double(forKey: "workTime") }
+        
+        let shortBreakTimePublisher = NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
+            .map { _ in UserDefaults.standard.double(forKey: "shortBreakTime") }
+        
+        let longBreakTimePublisher = NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
+            .map { _ in UserDefaults.standard.double(forKey: "longBreakTime") }
+        
+        let sessionsUntilLongBreakPublisher = NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
+            .map { _ in UserDefaults.standard.integer(forKey: "sessionsUntilLongBreak") }
+        
+        // Combine all publishers
+        configObserver = Publishers.CombineLatest4(
+            workTimePublisher,
+            shortBreakTimePublisher,
+            longBreakTimePublisher,
+            sessionsUntilLongBreakPublisher
+        )
+        .receive(on: DispatchQueue.main)
+        .sink { [weak self] _ in
+            self?.handleConfigChange()
+        }
+    }
+    
+    private func handleConfigChange() {
+        if isRunning {
+            // If timer is running, show alert that changes will apply next session
+            DispatchQueue.main.async { [weak self] in
+                self?.showConfigUpdateAlert = true
+            }
+        } else {
+            // If timer is not running, update immediately
+            updateTimerWithNewConfig()
+        }
+    }
+    
+    private func updateTimerWithNewConfig() {
+        // Only update if timer is not running
+        guard !isRunning else { return }
+        
+        // Update time remaining based on current mode
+        timeRemaining = isWorkMode ? getWorkTime() : getBreakTime()
+        
+        // Update progress
+        updateProgress()
     }
     
     var timeString: String {
@@ -39,6 +94,8 @@ class TimerViewModel: ObservableObject {
             startTimer()
         } else {
             timer?.cancel()
+            // When stopping, update with new config
+            updateTimerWithNewConfig()
         }
     }
     

@@ -55,6 +55,11 @@ struct TimerView: View {
         }
         .padding()
         .background(colorScheme == .dark ? Color.black : Color.white)
+        .alert("Cambios en la configuración", isPresented: $viewModel.showConfigUpdateAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Los cambios en la configuración se aplicarán en la siguiente sesión.")
+        }
     }
 }
 
