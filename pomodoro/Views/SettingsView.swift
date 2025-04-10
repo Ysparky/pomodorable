@@ -13,6 +13,8 @@ struct SettingsView: View {
     @StateObject private var themeService = ThemeService.shared
     @StateObject private var colorService = ColorService.shared
     
+    @State private var showResetConfirmAlert = false
+    
     var body: some View {
         Form {
             Section(header: Text("Duración del Temporizador")) {
@@ -112,8 +114,54 @@ struct SettingsView: View {
                         .foregroundColor(.secondary)
                 }
             }
+            
+            // Restore Default Settings Section
+            Section(header: Text("Otras opciones")) {
+                Button(action: {
+                    showResetConfirmAlert = true
+                }) {
+                    HStack {
+                        Image(systemName: "arrow.counterclockwise")
+                            .foregroundColor(.red)
+                        Text("Restaurar configuración por defecto")
+                            .foregroundColor(.red)
+                    }
+                }
+            }
         }
         .navigationTitle("Configuración")
+        .alert(isPresented: $showResetConfirmAlert) {
+            Alert(
+                title: Text("Restaurar configuración"),
+                message: Text("¿Estás seguro de que deseas restaurar toda la configuración a los valores por defecto?"),
+                primaryButton: .destructive(Text("Restaurar")) {
+                    resetToDefaultSettings()
+                },
+                secondaryButton: .cancel(Text("Cancelar"))
+            )
+        }
+    }
+    
+    private func resetToDefaultSettings() {
+        // Call the method in SettingsService
+        SettingsService.shared.resetToDefaults()
+        
+        // Update local state to reflect the default values
+        workTime = 25
+        shortBreakTime = 5
+        longBreakTime = 15
+        sessionsUntilLongBreak = 4
+        autoStartPomodoros = false
+        autoStartBreaks = false
+        notificationsEnabled = true
+        soundEnabled = true
+        
+        // Update theme in UI
+        themeService.currentTheme = .system
+        
+        // The ColorService is already updated by the SettingsService but we need to
+        // trigger a UI update by accessing the colorService's objectWillChange
+        colorService.objectWillChange.send()
     }
 }
 
