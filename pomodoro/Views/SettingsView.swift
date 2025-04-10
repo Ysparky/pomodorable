@@ -10,6 +10,8 @@ struct SettingsView: View {
     @AppStorage("autoStartBreaks") private var autoStartBreaks: Bool = false
     @AppStorage("autoStartPomodoros") private var autoStartPomodoros: Bool = false
     
+    @StateObject private var themeService = ThemeService.shared
+    
     var body: some View {
         Form {
             Section(header: Text("Duración del Temporizador")) {
@@ -58,6 +60,15 @@ struct SettingsView: View {
             Section(header: Text("Auto-inicio")) {
                 Toggle("Iniciar descansos automáticamente", isOn: $autoStartBreaks)
                 Toggle("Iniciar pomodoros automáticamente", isOn: $autoStartPomodoros)
+            }
+            
+            Section(header: Text("Apariencia")) {
+                Picker("Tema", selection: $themeService.currentTheme) {
+                    ForEach(AppTheme.allCases) { theme in
+                        Text(theme.displayName).tag(theme)
+                    }
+                }
+                .pickerStyle(SegmentedPickerStyle())
             }
             
             Section(header: Text("Información")) {

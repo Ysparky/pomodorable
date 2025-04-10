@@ -9,9 +9,12 @@ import SwiftUI
 
 @main
 struct pomodoroApp: App {
+    @StateObject private var themeService = ThemeService.shared
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .preferredColorScheme(themeService.currentTheme.colorScheme)
         }
     }
 }

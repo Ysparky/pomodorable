@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TimerView: View {
     @StateObject private var viewModel = TimerViewModel()
+    @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
         VStack(spacing: 20) {
@@ -15,7 +16,7 @@ struct TimerView: View {
                 Circle()
                     .stroke(lineWidth: 20)
                     .opacity(0.3)
-                    .foregroundColor(.gray)
+                    .foregroundColor(colorScheme == .dark ? .white : .gray)
                 
                 Circle()
                     .trim(from: 0.0, to: viewModel.progress)
@@ -27,6 +28,7 @@ struct TimerView: View {
                 VStack {
                     Text(viewModel.timeString)
                         .font(.system(size: 60, weight: .bold, design: .rounded))
+                        .foregroundColor(colorScheme == .dark ? .white : .black)
                     Text(viewModel.modeText)
                         .font(.title2)
                         .foregroundColor(.secondary)
@@ -40,16 +42,18 @@ struct TimerView: View {
                 Button(action: viewModel.resetTimer) {
                     Image(systemName: "arrow.clockwise")
                         .font(.title)
+                        .foregroundColor(colorScheme == .dark ? .white : .black)
                 }
                 
                 Button(action: viewModel.toggleTimer) {
                     Image(systemName: viewModel.isRunning ? "pause.fill" : "play.fill")
                         .font(.title)
+                        .foregroundColor(colorScheme == .dark ? .white : .black)
                 }
             }
-            .foregroundColor(.primary)
         }
         .padding()
+        .background(colorScheme == .dark ? Color.black : Color.white)
     }
 }
 
