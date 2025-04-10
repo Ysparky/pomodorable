@@ -11,6 +11,7 @@ struct SettingsView: View {
     @AppStorage("autoStartPomodoros") private var autoStartPomodoros: Bool = false
     
     @StateObject private var themeService = ThemeService.shared
+    @StateObject private var colorService = ColorService.shared
     
     var body: some View {
         Form {
@@ -69,6 +70,38 @@ struct SettingsView: View {
                     }
                 }
                 .pickerStyle(SegmentedPickerStyle())
+                
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Colores del temporizador")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    
+                    HStack {
+                        Text("Trabajo")
+                        Spacer()
+                        ColorPicker("", selection: Binding(
+                            get: { colorService.colors.workColor },
+                            set: { newColor in
+                                var colors = colorService.colors
+                                colors.workColor = newColor
+                                colorService.colors = colors
+                            }
+                        ))
+                    }
+                    
+                    HStack {
+                        Text("Descanso")
+                        Spacer()
+                        ColorPicker("", selection: Binding(
+                            get: { colorService.colors.breakColor },
+                            set: { newColor in
+                                var colors = colorService.colors
+                                colors.breakColor = newColor
+                                colorService.colors = colors
+                            }
+                        ))
+                    }
+                }
             }
             
             Section(header: Text("Información")) {

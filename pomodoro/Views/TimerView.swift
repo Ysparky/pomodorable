@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TimerView: View {
     @StateObject private var viewModel = TimerViewModel()
+    @StateObject private var colorService = ColorService.shared
     @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
@@ -21,7 +22,7 @@ struct TimerView: View {
                 Circle()
                     .trim(from: 0.0, to: viewModel.progress)
                     .stroke(style: StrokeStyle(lineWidth: 20, lineCap: .round, lineJoin: .round))
-                    .foregroundColor(viewModel.isWorkMode ? .red : .green)
+                    .foregroundColor(viewModel.isWorkMode ? colorService.colors.workColor : colorService.colors.breakColor)
                     .rotationEffect(Angle(degrees: 270.0))
                     .animation(.linear, value: viewModel.progress)
                 
