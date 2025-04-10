@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct TimerView: View {
-    @StateObject private var viewModel = TimerViewModel()
+    @EnvironmentObject var viewModel: TimerViewModel
     @StateObject private var colorService = ColorService.shared
     @Environment(\.colorScheme) private var colorScheme
     
@@ -69,4 +69,5 @@ struct TimerView: View {
 
 #Preview {
     TimerView()
+        .environmentObject(TimerViewModel())
 } 

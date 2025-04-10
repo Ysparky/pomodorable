@@ -29,9 +29,22 @@
 		460E7BA42DA79F2C00EEA63D /* pomodoroUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = pomodoroUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		460E7BF62DA7C5FD00EEA63D /* Exceptions for "pomodoro" folder in "pomodoro" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 460E7B8C2DA79F2B00EEA63D /* pomodoro */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		460E7B8F2DA79F2B00EEA63D /* pomodoro */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				460E7BF62DA7C5FD00EEA63D /* Exceptions for "pomodoro" folder in "pomodoro" target */,
+			);
 			path = pomodoro;
 			sourceTree = "<group>";
 		};
@@ -322,6 +335,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
@@ -380,6 +394,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;

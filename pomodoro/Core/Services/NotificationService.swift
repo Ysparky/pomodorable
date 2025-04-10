@@ -34,6 +34,42 @@ class NotificationService {
         
         UNUserNotificationCenter.current().add(request)
     }
+    
+    // Function to schedule a notification that will trigger when the timer ends
+    // Useful for when the app is in the background
+    func scheduleTimerEndNotification(timeRemaining: Int, isWorkMode: Bool) {
+        // Cancel pending notifications first
+        cancelPendingTimerNotifications()
+        
+        // Check if notifications are enabled
+        guard UserDefaults.standard.bool(forKey: "notificationsEnabled") else { return }
+        
+        let content = UNMutableNotificationContent()
+        
+        if isWorkMode {
+            content.title = "¡Tiempo de descanso!"
+            content.body = "Has completado tu sesión de trabajo. Toma un descanso."
+        } else {
+            content.title = "¡Tiempo de trabajo!"
+            content.body = "El descanso ha terminado. ¡Vuelve al trabajo!"
+        }
+        
+        // Only add sound if enabled in settings
+        if UserDefaults.standard.bool(forKey: "soundEnabled") {
+            content.sound = .default
+        }
+        
+        // Schedule the notification to trigger exactly when the time ends
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: TimeInterval(timeRemaining), repeats: false)
+        let request = UNNotificationRequest(identifier: "timerEndNotification", content: content, trigger: trigger)
+        
+        UNUserNotificationCenter.current().add(request)
+    }
+    
+    // Cancel scheduled timer notifications
+    func cancelPendingTimerNotifications() {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["timerEndNotification"])
+    }
 }
 
 enum TimerMode {
