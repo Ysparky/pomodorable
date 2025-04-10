@@ -14,6 +14,7 @@ struct pomodoroApp: App {
     @StateObject private var timerViewModel = TimerViewModel()
     
     init() {
+        setupDefaultSettings()
         registerBackgroundTasks()
         configureLocalization()
     }
@@ -63,6 +64,19 @@ struct pomodoroApp: App {
             try BGTaskScheduler.shared.submit(request)
         } catch {
             print("Could not schedule background task: \(error)")
+        }
+    }
+    
+    private func setupDefaultSettings() {
+        // Check if the app has already been configured
+        let hasBeenConfigured = UserDefaults.standard.bool(forKey: "hasBeenConfigured")
+        
+        if !hasBeenConfigured {
+            // First time running the app, set default values
+            SettingsService.shared.resetToDefaults()
+            
+            // Mark as configured
+            UserDefaults.standard.set(true, forKey: "hasBeenConfigured")
         }
     }
 }

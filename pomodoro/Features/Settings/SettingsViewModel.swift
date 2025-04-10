@@ -69,15 +69,21 @@ class SettingsViewModel: ObservableObject {
     
     // Methods to get timer settings values in seconds
     func getWorkTime() -> Int {
-        Int(UserDefaults.standard.double(forKey: "workTime") * 60)
+        let workTime = UserDefaults.standard.double(forKey: "workTime")
+        // If it doesn't exist or is zero, use the default value (25 minutes)
+        return workTime > 0 ? Int(workTime * 60) : 25 * 60
     }
     
     func getShortBreakTime() -> Int {
-        Int(UserDefaults.standard.double(forKey: "shortBreakTime") * 60)
+        let shortBreakTime = UserDefaults.standard.double(forKey: "shortBreakTime")
+        // If it doesn't exist or is zero, use the default value (5 minutes)
+        return shortBreakTime > 0 ? Int(shortBreakTime * 60) : 5 * 60
     }
     
     func getLongBreakTime() -> Int {
-        Int(UserDefaults.standard.double(forKey: "longBreakTime") * 60)
+        let longBreakTime = UserDefaults.standard.double(forKey: "longBreakTime")
+        // If it doesn't exist or is zero, use the default value (15 minutes)
+        return longBreakTime > 0 ? Int(longBreakTime * 60) : 15 * 60
     }
     
     func getBreakTime(shouldTakeLongBreak: Bool) -> Int {
