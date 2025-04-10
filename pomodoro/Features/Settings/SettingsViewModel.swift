@@ -1,7 +1,7 @@
 import SwiftUI
 
 class SettingsViewModel: ObservableObject {
-    // Referencias a los servicios compartidos
+    // References to shared services
     @Published var themeService = ThemeService.shared
     @Published var colorService = ColorService.shared
     

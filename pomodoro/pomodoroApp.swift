@@ -28,7 +28,7 @@ struct pomodoroApp: App {
     }
     
     private func configureLocalization() {
-        // Asegurarse de que el Bundle principal pueda encontrar los archivos de localización
+        // Ensure the main bundle can find the localization files
         Bundle.main.path(forResource: "en", ofType: "lproj")
         Bundle.main.path(forResource: "es", ofType: "lproj")
         Bundle.main.path(forResource: "pt", ofType: "lproj")

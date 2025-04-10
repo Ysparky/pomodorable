@@ -88,7 +88,7 @@ struct HistoryView: View {
                     if viewMode == .list {
                         // List of sessions
                         if viewModel.sessionsForSelectedDay.isEmpty {
-                            // Vista para cuando no hay sesiones
+                            // Empty view
                             VStack(spacing: 16) {
                                 Spacer()
                                 
@@ -113,7 +113,7 @@ struct HistoryView: View {
                             }
                             .padding()
                         } else {
-                            // Lista de sesiones para el día seleccionado
+                            // List of sessions for the selected day
                             List {
                                 Section {
                                     ForEach(viewModel.sessionsForSelectedDay.sorted(by: { $0.startTime > $1.startTime })) { session in
@@ -131,7 +131,7 @@ struct HistoryView: View {
                     } else {
                         // Charts view
                         if viewModel.sessionsForSelectedDay.isEmpty {
-                            // Vista para cuando no hay sesiones (misma que en modo lista)
+                            // Empty view (same as in list mode)
                             VStack(spacing: 16) {
                                 Spacer()
                                 
@@ -156,7 +156,7 @@ struct HistoryView: View {
                             }
                             .padding()
                         } else {
-                            // Gráficos con estilo de lista
+                            // Charts with list style
                             ScrollView {
                                 ProductivityChartsView(viewModel: viewModel)
                                     .padding(.horizontal, 0)
@@ -175,7 +175,7 @@ struct HistoryView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 16) {
-                        // View mode selector en la barra de navegación
+                        // View mode selector in the navigation bar
                         Picker("", selection: $viewMode) {
                             Image(systemName: "list.bullet").tag(ViewMode.list)
                             Image(systemName: "chart.xyaxis.line").tag(ViewMode.charts)
@@ -183,7 +183,7 @@ struct HistoryView: View {
                         .pickerStyle(SegmentedPickerStyle())
                         .frame(width: 100)
                         
-                        // Menú de opciones
+                        // Options menu
                         Menu {
                             Button(action: {
                                 viewModel.resetToCurrentDay()
@@ -216,7 +216,7 @@ struct HistoryView: View {
                     }
                 }
                 
-                // Añadir botón para sincronizar manualmente
+                // Add button to manually sync
                 if viewModel.isCloudSyncEnabled {
                     ToolbarItem(placement: .navigationBarLeading) {
                         Button(action: {
@@ -260,11 +260,11 @@ struct HistoryView: View {
         let displayFormatter = DateFormatter()
         displayFormatter.locale = Locale(identifier: "es_ES")
         
-        // Si hay una fecha específica seleccionada, ajustar el formato
+        // If there is a specific date selected, adjust the format
         if viewModel.isCustomDateSelected {
             let calendar = Calendar.current
             if calendar.isDate(date, inSameDayAs: viewModel.selectedDate) {
-                // Si es la fecha específica seleccionada
+                // If it's the specific date selected
                 if calendar.isDateInToday(date) {
                     return "today".localized
                 } else if calendar.isDateInYesterday(date) {
@@ -274,16 +274,16 @@ struct HistoryView: View {
                     return displayFormatter.string(from: date).capitalized
                 }
             } else {
-                // Otras fechas en el periodo seleccionado
+                // Other dates in the selected period
                 displayFormatter.dateFormat = "EEEE, d MMMM"
                 return displayFormatter.string(from: date).capitalized
             }
         }
         
-        // Si no hay una fecha específica, usar el comportamiento normal por timeframe
+        // If there is no specific date, use the normal behavior by timeframe
         switch timeframe {
         case .daily:
-            // Para el timeframe diario: Hoy, Ayer o fecha
+            // For daily timeframe: Today, Yesterday or date
             if Calendar.current.isDateInToday(date) {
                 return "today".localized
             } else if Calendar.current.isDateInYesterday(date) {
@@ -294,7 +294,7 @@ struct HistoryView: View {
             }
             
         case .weekly:
-            // Para el timeframe semanal: Nombre del día o "Hoy"/"Ayer"
+            // For weekly timeframe: Day name or "Today"/"Yesterday"
             if Calendar.current.isDateInToday(date) {
                 return "today".localized
             } else if Calendar.current.isDateInYesterday(date) {
@@ -303,20 +303,20 @@ struct HistoryView: View {
                 displayFormatter.dateFormat = "EEEE"
                 let dayName = displayFormatter.string(from: date).capitalized
                 
-                // Para días de esta semana, mostrar solo el nombre del día
+                // For days of this week, show only the day name
                 let today = Date()
                 if let startOfWeek = Calendar.current.date(from: Calendar.current.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today)),
                    date >= startOfWeek && date <= today {
                     return dayName
                 } else {
-                    // Para días fuera de esta semana, mostrar el nombre del día y la fecha
+                    // For days outside this week, show the day name and date
                     displayFormatter.dateFormat = "d MMM"
                     return "\(dayName), \(displayFormatter.string(from: date))"
                 }
             }
             
         case .monthly:
-            // Para timeframe mensual: Día del mes (1 Enero, etc.)
+            // For monthly timeframe: Day of the month (1 January, etc.)
             let day = Calendar.current.component(.day, from: date)
             
             if Calendar.current.isDateInToday(date) {
@@ -364,7 +364,7 @@ struct SummaryCardView: View {
             .cornerRadius(10)
             .padding(.horizontal)
             
-            // Información contextual para el día seleccionado
+            // Contextual information for the selected day
             if let productiveTime = viewModel.mostProductiveTimeOfSelectedDay {
                 HStack {
                     Image(systemName: "clock.fill")
@@ -447,7 +447,7 @@ struct SessionRowView: View {
     
     var body: some View {
         HStack(spacing: 14) {
-            // Indicador de tipo de sesión
+            // Session type indicator
             ZStack {
                 Circle()
                     .fill(session.isCompleted ? Color.green.opacity(0.15) : Color.blue.opacity(0.15))
@@ -484,7 +484,7 @@ struct SessionRowView: View {
             
             Spacer()
             
-            // Fecha de la sesión si es más de 1 día atrás
+            // Session date if more than 1 day ago
             if !Calendar.current.isDateInToday(session.startTime) && !Calendar.current.isDateInYesterday(session.startTime) {
                 Text(formatShortDate(session.startTime))
                     .font(.caption)

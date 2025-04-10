@@ -16,7 +16,7 @@ struct WeekDaySelector: View {
 //                .padding(.horizontal)
             
             VStack(spacing: 8) {
-                // Días de la semana
+                // Week days
                 HStack(spacing: 0) {
                     ForEach(weekLabels, id: \.self) { label in
                         Text(label)
@@ -27,7 +27,7 @@ struct WeekDaySelector: View {
                     }
                 }
                 
-                // Selector de días
+                // Week days selector
                 HStack(spacing: 8) {
                     ForEach(weekDays, id: \.self) { date in
                         DayButton(
@@ -57,12 +57,12 @@ struct WeekDaySelector: View {
     private func generateWeekDays() {
         let today = Date()
         var calendar = Calendar.current
-        calendar.firstWeekday = 1 // Domingo es el primer día (1)
+        calendar.firstWeekday = 1 // Sunday is the first day (1)
         
-        // Obtener el inicio de la semana actual
+        // Get the start of the current week
         let startOfWeek = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today))!
         
-        // Generar array con los 7 días de la semana
+        // Generate array with the 7 days of the week
         weekDays = (0..<7).map { day in
             calendar.date(byAdding: .day, value: day, to: startOfWeek)!
         }

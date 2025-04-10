@@ -55,7 +55,7 @@ struct ProductivityChartsView: View {
     }
 }
 
-// Gráfico de barras que muestra sesiones por día
+// Bar chart that shows sessions by day
 struct DailySessionsChart: View {
     let sessions: [PomodoroSession]
     
@@ -109,7 +109,7 @@ struct DailySessionsChart: View {
                     AxisMarks(position: .leading)
                 }
             } else {
-                // Fallback para iOS 15 o anterior
+                // Fallback for iOS 15 or earlier
                 Text("chart_ios16_required".localized)
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .center)
@@ -122,7 +122,7 @@ struct DailySessionsChart: View {
     }
 }
 
-// Gráfico circular que muestra distribución de sesiones por hora del día
+// Circular chart that shows session distribution by hour of the day
 struct HourlyDistributionChart: View {
     let sessions: [PomodoroSession]
     
@@ -172,7 +172,7 @@ struct HourlyDistributionChart: View {
                 .padding(16)
                 .background(Color(.secondarySystemGroupedBackground))
             } else {
-                // Fallback para iOS 15 o anterior
+                // Fallback for iOS 15 or earlier
                 Text("chart_ios16_required".localized)
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .center)
@@ -185,7 +185,7 @@ struct HourlyDistributionChart: View {
     }
 }
 
-// Gráfico de líneas que muestra tendencia de productividad
+// Line chart that shows productivity trend
 struct ProductivityTrendChart: View {
     let sessions: [PomodoroSession]
     
@@ -255,7 +255,7 @@ struct ProductivityTrendChart: View {
                     AxisMarks(position: .bottom)
                 }
             } else {
-                // Fallback para iOS 15 o anterior
+                // Fallback for iOS 15 or earlier
                 Text("chart_ios16_required".localized)
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .center)
@@ -268,43 +268,43 @@ struct ProductivityTrendChart: View {
     }
 }
 
-// Gráfico que muestra la productividad por día de la semana
+// Chart that shows productivity by day of the week
 struct WeekdayProductivityChart: View {
     @ObservedObject var viewModel: HistoryViewModel
     
     var weekdayData: [WeekdayProductivityData] {
-        // Obtener los datos de productividad por día de la semana
+        // Get productivity data by day of the week
         let productivityData = viewModel.productivityByDayOfWeek
         
-        // Usar DateFormatter para obtener los días de la semana según el locale actual
+        // Use DateFormatter to get the weekday names according to the current locale
         let formatter = DateFormatter()
         formatter.locale = Locale.current
         
-        // Ordenar según first weekday del calendario
+        // Sort according to the first weekday of the calendar
         let calendar = Calendar.current
         
-        // Asegurarse de que tenemos símbolos de días de la semana (no opcionales)
+        // Ensure we have weekday symbols (not optional)
         guard let weekdaySymbols = formatter.shortWeekdaySymbols else {
-            // Fallback a los días predeterminados si no hay símbolos disponibles
+            // Fallback to default days if no symbols are available
             return []
         }
         
-        // Crear una copia mutable del array de símbolos
+        // Create a mutable copy of the symbols array
         var orderedSymbols = weekdaySymbols
         
-        // Si la semana comienza en domingo (US) pero queremos mostrar lunes primero
-        // O viceversa según configuración del sistema
+        // If the week starts on Sunday (US) but we want to show Monday first
+        // Or vice versa according to system configuration
         let firstWeekdayIndex = (calendar.firstWeekday - 1)  // 0-based
         if firstWeekdayIndex > 0 && firstWeekdayIndex < orderedSymbols.count {
-            // Reordenar los días comenzando por el primer día de la semana según el calendario
+            // Reorder the days starting with the first day of the week according to the calendar
             let firstPart = Array(orderedSymbols.prefix(firstWeekdayIndex))
             orderedSymbols.removeFirst(firstWeekdayIndex)
             orderedSymbols.append(contentsOf: firstPart)
         }
         
-        // Convertir a arreglo para el gráfico
+        // Convert to array for the chart
         return orderedSymbols.map { day in
-            // Buscar los datos para este día - valor predeterminado si no existe
+            // Search for data for this day - default if not exists
             let data = productivityData[day] ?? (sessions: 0, minutes: 0)
             return WeekdayProductivityData(
                 day: day,
@@ -361,14 +361,14 @@ struct WeekdayProductivityChart: View {
                 ])
                 .chartLegend(position: .bottom, alignment: .center)
             } else {
-                // Fallback para iOS 15 o anterior
+                // Fallback for iOS 15 or earlier
                 Text("chart_ios16_required".localized)
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .center)
                     .background(Color(.secondarySystemGroupedBackground))
             }
             
-            // Análisis de productividad
+            // Productivity analysis
             VStack(alignment: .leading, spacing: 8) {
                 Text("stats".localized + ":")
                     .font(.subheadline)
@@ -393,16 +393,16 @@ struct WeekdayProductivityChart: View {
             let formatter = DateFormatter()
             formatter.locale = Locale.current
             
-            // Obtenemos los arrays de símbolos (no opcionales)
+            // Get the arrays of symbols (not optional)
             guard let shortSymbols = formatter.shortWeekdaySymbols,
                   let fullSymbols = formatter.weekdaySymbols else {
-                // Si no podemos obtener los símbolos, usamos directamente el día abreviado
+                // If we can't get the symbols, use the abbreviated day directly
                 return String(format: "most_productive_day_message".localized, 
                               mostSessions.day, 
                               mostSessions.sessions)
             }
             
-            // Intentar encontrar el índice del día abreviado
+            // Try to find the index of the abbreviated day
             if let dayIndex = shortSymbols.firstIndex(of: mostSessions.day),
                dayIndex < fullSymbols.count {
                 let fullDayName = fullSymbols[dayIndex]
@@ -410,7 +410,7 @@ struct WeekdayProductivityChart: View {
                               fullDayName, 
                               mostSessions.sessions)
             } else {
-                // Si no se encuentra, usar el nombre abreviado directamente
+                // If not found, use the abbreviated name directly
                 return String(format: "most_productive_day_message".localized, 
                               mostSessions.day, 
                               mostSessions.sessions)
@@ -421,7 +421,7 @@ struct WeekdayProductivityChart: View {
     }
 }
 
-// Modelos de datos para los gráficos
+// Data models for the charts
 struct DailySessionCount: Identifiable {
     let id = UUID()
     let date: Date

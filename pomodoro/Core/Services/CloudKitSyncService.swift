@@ -8,7 +8,7 @@ class CloudKitSyncService {
     private let privateDatabase: CKDatabase
     private let recordType = "PomodoroSession"
     
-    // Notification para cuando se sincroniza con iCloud
+    // Notification for when iCloud sync is completed
     static let cloudSyncCompletedNotification = Notification.Name("CloudSyncCompleted")
     
     private init() {
@@ -16,7 +16,7 @@ class CloudKitSyncService {
         privateDatabase = container.privateCloudDatabase
     }
     
-    // Comprobar si el usuario está conectado a iCloud
+    // Check if the user is connected to iCloud
     func checkiCloudAccountStatus(completion: @escaping (Bool, Error?) -> Void) {
         container.accountStatus { status, error in
             switch status {
@@ -28,7 +28,7 @@ class CloudKitSyncService {
         }
     }
     
-    // Convertir PomodoroSession a CKRecord
+    // Convert PomodoroSession to CKRecord
     private func createRecord(from session: PomodoroSession) -> CKRecord {
         let recordID = CKRecord.ID(recordName: session.id.uuidString)
         let record = CKRecord(recordType: recordType, recordID: recordID)
@@ -41,7 +41,7 @@ class CloudKitSyncService {
         return record
     }
     
-    // Convertir CKRecord a PomodoroSession
+    // Convert CKRecord to PomodoroSession
     private func createPomodoroSession(from record: CKRecord) -> PomodoroSession? {
         guard let startTime = record["startTime"] as? Date,
               let endTime = record["endTime"] as? Date,
@@ -64,7 +64,7 @@ class CloudKitSyncService {
         )
     }
     
-    // Guardar sesiones en iCloud
+    // Save sessions to iCloud
     func saveSessions(_ sessions: [PomodoroSession], completion: @escaping (Error?) -> Void) {
         let operationQueue = OperationQueue()
         
@@ -92,7 +92,7 @@ class CloudKitSyncService {
         }
     }
     
-    // Sincronizar todas las sesiones desde iCloud
+    // Fetch all sessions from iCloud
     func fetchAllSessions(completion: @escaping ([PomodoroSession]?, Error?) -> Void) {
         let query = CKQuery(recordType: recordType, predicate: NSPredicate(value: true))
         
@@ -117,7 +117,7 @@ class CloudKitSyncService {
         }
     }
     
-    // Eliminar sesiones de iCloud
+    // Delete sessions from iCloud
     func deleteSessions(ids: [UUID], completion: @escaping (Error?) -> Void) {
         let recordIDs = ids.map { CKRecord.ID(recordName: $0.uuidString) }
         
@@ -138,7 +138,7 @@ class CloudKitSyncService {
         privateDatabase.add(operation)
     }
     
-    // Eliminar todas las sesiones de iCloud
+    // Delete all sessions from iCloud
     func deleteAllSessions(completion: @escaping (Error?) -> Void) {
         let query = CKQuery(recordType: recordType, predicate: NSPredicate(value: true))
         

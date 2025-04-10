@@ -10,9 +10,9 @@ struct TaskScheduleSelector: View {
     private let calendar = Calendar.current
 
     var body: some View {
-        // Interfaz simplificada similar a la imagen de referencia
+        // Simplified interface similar to the reference image
         VStack(spacing: 4) {
-            // Fila de etiquetas de días
+            // Row of day labels
             HStack(spacing: 0) {
                 ForEach(0..<7, id: \.self) { index in
                     Text(dayLabels[safe: index] ?? "")
@@ -24,7 +24,7 @@ struct TaskScheduleSelector: View {
             }
             .padding(.horizontal, 4)
 
-            // Fila de números de días
+            // Row of day numbers
             HStack(spacing: 0) {
                 ForEach(weekDays.indices, id: \.self) { index in
                     if index < weekDays.count {
@@ -56,24 +56,24 @@ struct TaskScheduleSelector: View {
         let today = Date()
         let calendar = Calendar.current
 
-        // Generar array con fechas pasadas y el día actual, manteniendo 7 días en total
+        // Generate array with past dates and the current day, keeping a total of 7 days
         var days: [Date] = []
         let daysToShow = 7
         var dayOffset = 0
 
         while days.count < daysToShow {
             let dayToAdd = calendar.date(byAdding: .day, value: -dayOffset, to: today)!
-            // Solo añadimos si es el día actual o anterior
+            // Only add if it's the current or previous day
             if calendar.compare(dayToAdd, to: today, toGranularity: .day) != .orderedDescending {
-                days.insert(dayToAdd, at: 0)  // Insertamos al principio para mantener orden cronológico
+                days.insert(dayToAdd, at: 0)  // Insert at the beginning to maintain chronological order
             }
             dayOffset += 1
         }
 
-        // Asignar los días en orden cronológico
+        // Assign days in chronological order
         weekDays = days
 
-        // Generar etiquetas de días correspondientes
+        // Generate corresponding day labels
         dayLabels = weekDays.map { date in
             let weekday = calendar.component(.weekday, from: date)
             return formatWeekdayToShortName(weekday)
@@ -81,7 +81,7 @@ struct TaskScheduleSelector: View {
     }
 
     private func formatWeekdayToShortName(_ weekday: Int) -> String {
-        // weekday: 1 = Domingo, 2 = Lunes, ... 7 = Sábado
+        // weekday: 1 = Sunday, 2 = Monday, ... 7 = Saturday
         switch weekday {
         case 1: return "D"
         case 2: return "L"
@@ -95,7 +95,7 @@ struct TaskScheduleSelector: View {
     }
 }
 
-// Extensión para acceder a los arrays de forma segura
+// Extension to safely access arrays
 extension Array {
     subscript(safe index: Index) -> Element? {
         return indices.contains(index) ? self[index] : nil

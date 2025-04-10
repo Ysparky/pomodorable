@@ -93,7 +93,7 @@ struct SettingsView: View {
                 Toggle("auto_start_pomodoros".localized, isOn: $autoStartPomodoros)
             }
             
-            // Sección de sincronización con iCloud
+            // iCloud sync section
             Section(header: Text("sync".localized)) {
                 Toggle("sync_with_icloud".localized, isOn: $historyViewModel.isCloudSyncEnabled)
                     .onChange(of: historyViewModel.isCloudSyncEnabled) { oldValue, newValue in

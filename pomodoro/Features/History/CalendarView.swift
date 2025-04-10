@@ -13,8 +13,8 @@ struct CalendarView: View {
         formatter.locale = Locale.current
         var shortWeekdaySymbols = formatter.veryShortWeekdaySymbols ?? ["L", "M", "X", "J", "V", "S", "D"]
         
-        // Reordenar para que la semana comience con lunes (depende del locale)
-        if calendar.firstWeekday == 1 { // Si la semana comienza en domingo (US)
+        // Reorder to start with Monday (depends on locale)
+        if calendar.firstWeekday == 1 { // If the week starts on Sunday (US)
             let sunday = shortWeekdaySymbols.remove(at: 0)
             shortWeekdaySymbols.append(sunday)
         }
@@ -81,7 +81,7 @@ struct CalendarView: View {
                                     date, to: Date(), toGranularity: .day) == .orderedDescending
                             )
                             .onTapGesture {
-                                // Solo permitir seleccionar fechas pasadas o el día actual
+                                // Only allow selecting past dates or the current day
                                 if calendar.compare(date, to: Date(), toGranularity: .day)
                                     != .orderedDescending
                                 {
@@ -101,8 +101,6 @@ struct CalendarView: View {
                 .padding(.horizontal)
 
                 Spacer()
-
-                    // Eliminamos la sección de atajos y simplemente agregamos un padding inferior
                     .padding(.bottom, 16)
             }
             .navigationTitle("select_date".localized)
@@ -125,7 +123,7 @@ struct CalendarView: View {
             }
         }
         .onAppear {
-            // Cargar las fechas con sesiones
+            // Load the dates with sessions
             viewModel.loadDatesWithSessions()
         }
     }
@@ -137,7 +135,7 @@ struct CalendarView: View {
         return formatter.string(from: date).capitalized
     }
 
-    // Estructura para representar un día del calendario con ID único
+    // Structure to represent a calendar day with a unique ID
     struct DayItem: Identifiable {
         var id: Int
         var date: Date?
