@@ -106,15 +106,14 @@ class TimerViewModel: ObservableObject {
             startTimer()
         } else {
             timer?.cancel()
-            // When stopping, update with new config
-            updateTimerWithNewConfig()
         }
     }
     
     func resetTimer() {
         timer?.cancel()
         isRunning = false
-        timeRemaining = isWorkMode ? getWorkTime() : getBreakTime()
+        isWorkMode = true
+        timeRemaining = getWorkTime()
         progress = 1.0
     }
     
