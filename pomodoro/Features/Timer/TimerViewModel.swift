@@ -16,6 +16,11 @@ class TimerViewModel: ObservableObject {
     // Keys to observe
     private let durationKeys = ["workTime", "shortBreakTime", "longBreakTime"]
     private let sessionsKey = "sessionsUntilLongBreak"
+    private let otherKeys = ["soundEnabled", "notificationsEnabled", "autoStartBreaks", "autoStartPomodoros"]
+    
+    // Notification names
+    private let durationChangedNotification = Notification.Name("DurationSettingsChanged")
+    private let sessionsChangedNotification = Notification.Name("SessionsSettingsChanged")
     
     // Default values
     private let defaultWorkTime: Int = 25 * 60
@@ -35,42 +40,26 @@ class TimerViewModel: ObservableObject {
     }
     
     private func setupConfigObserver() {
-        // Observer for timer duration keys
+        // Set up notification center observers
         let center = NotificationCenter.default
         
-        center.addObserver(self, selector: #selector(userDefaultsDidChange(_:)), name: UserDefaults.didChangeNotification, object: nil)
+        // Remove previous observers if they exist
+        center.removeObserver(self)
+        
+        // Add observers for our specific notifications
+        center.addObserver(self, selector: #selector(handleDurationSettingsChanged), name: durationChangedNotification, object: nil)
+        center.addObserver(self, selector: #selector(handleSessionsSettingsChanged), name: sessionsChangedNotification, object: nil)
     }
     
-    @objc private func userDefaultsDidChange(_ notification: Notification) {
-        // Get the user defaults that changed
-        guard let userDefaults = notification.object as? UserDefaults else { return }
-        
-        // Check if any of our observed keys changed
-        var durationChanged = false
-        var sessionsChanged = false
-        
-        for key in durationKeys {
-            if userDefaults.object(forKey: key) != nil {
-                durationChanged = true
-                break
-            }
+    @objc private func handleDurationSettingsChanged(_ notification: Notification) {
+        DispatchQueue.main.async { [weak self] in
+            self?.handleDurationConfigChange()
         }
-        
-        if userDefaults.object(forKey: sessionsKey) != nil {
-            sessionsChanged = true
-        }
-        
-        // Handle the changes
-        if durationChanged {
-            DispatchQueue.main.async { [weak self] in
-                self?.handleDurationConfigChange()
-            }
-        }
-        
-        if sessionsChanged {
-            DispatchQueue.main.async { [weak self] in
-                self?.handleSessionsConfigChange()
-            }
+    }
+    
+    @objc private func handleSessionsSettingsChanged(_ notification: Notification) {
+        DispatchQueue.main.async { [weak self] in
+            self?.handleSessionsConfigChange()
         }
     }
     
@@ -207,6 +196,7 @@ class TimerViewModel: ObservableObject {
     }
     
     deinit {
+        // Only remove observers from NotificationCenter
         NotificationCenter.default.removeObserver(self)
     }
 } 

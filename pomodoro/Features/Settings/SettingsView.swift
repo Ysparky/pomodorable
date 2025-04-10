@@ -24,7 +24,14 @@ struct SettingsView: View {
                         Text("\(Int(workTime)) min")
                             .foregroundColor(.secondary)
                     }
-                    Slider(value: $workTime, in: 1...60, step: 1)
+                    Slider(value: Binding(
+                        get: { workTime },
+                        set: { newValue in
+                            workTime = newValue
+                            // Send notification for duration change
+                            NotificationCenter.default.post(name: Notification.Name("DurationSettingsChanged"), object: nil)
+                        }
+                    ), in: 1...60, step: 1)
                 }
                 
                 VStack(alignment: .leading) {
@@ -34,7 +41,14 @@ struct SettingsView: View {
                         Text("\(Int(shortBreakTime)) min")
                             .foregroundColor(.secondary)
                     }
-                    Slider(value: $shortBreakTime, in: 1...30, step: 1)
+                    Slider(value: Binding(
+                        get: { shortBreakTime },
+                        set: { newValue in
+                            shortBreakTime = newValue
+                            // Send notification for duration change
+                            NotificationCenter.default.post(name: Notification.Name("DurationSettingsChanged"), object: nil)
+                        }
+                    ), in: 1...30, step: 1)
                 }
                 
                 VStack(alignment: .leading) {
@@ -44,13 +58,27 @@ struct SettingsView: View {
                         Text("\(Int(longBreakTime)) min")
                             .foregroundColor(.secondary)
                     }
-                    Slider(value: $longBreakTime, in: 1...60, step: 1)
+                    Slider(value: Binding(
+                        get: { longBreakTime },
+                        set: { newValue in
+                            longBreakTime = newValue
+                            // Send notification for duration change
+                            NotificationCenter.default.post(name: Notification.Name("DurationSettingsChanged"), object: nil)
+                        }
+                    ), in: 1...60, step: 1)
                 }
             }
             
             Section(header: Text("Sesiones")) {
                 Stepper("Sesiones hasta descanso largo: \(sessionsUntilLongBreak)",
-                        value: $sessionsUntilLongBreak,
+                        value: Binding(
+                            get: { sessionsUntilLongBreak },
+                            set: { newValue in
+                                sessionsUntilLongBreak = newValue
+                                // Send notification for sessions change
+                                NotificationCenter.default.post(name: Notification.Name("SessionsSettingsChanged"), object: nil)
+                            }
+                        ),
                         in: 1...10)
             }
             
@@ -154,6 +182,10 @@ struct SettingsView: View {
         autoStartBreaks = false
         notificationsEnabled = true
         soundEnabled = true
+        
+        // Send notifications for relevant changes
+        NotificationCenter.default.post(name: Notification.Name("DurationSettingsChanged"), object: nil)
+        NotificationCenter.default.post(name: Notification.Name("SessionsSettingsChanged"), object: nil)
         
         // The ColorService is already updated by the SettingsService but we need to
         // trigger a UI update
