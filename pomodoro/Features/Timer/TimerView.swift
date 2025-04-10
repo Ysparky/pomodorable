@@ -9,7 +9,7 @@ struct TimerView: View {
         ZStack {
             VStack(spacing: 20) {
                 // Session Counter
-                Text("Sesiones completadas: \(viewModel.completedSessions)")
+                Text("completed_sessions".localizedWithArg(viewModel.completedSessions))
                     .font(.headline)
                     .foregroundColor(.secondary)
                 
@@ -45,12 +45,14 @@ struct TimerView: View {
                         Image(systemName: "arrow.clockwise")
                             .font(.title)
                             .foregroundColor(colorScheme == .dark ? .white : .black)
+                            .accessibilityLabel("reset".localized)
                     }
                     
                     Button(action: viewModel.toggleTimer) {
                         Image(systemName: viewModel.isRunning ? "pause.fill" : "play.fill")
                             .font(.title)
                             .foregroundColor(colorScheme == .dark ? .white : .black)
+                            .accessibilityLabel(viewModel.isRunning ? "pause".localized : "start".localized)
                     }
                 }
             }
@@ -59,7 +61,7 @@ struct TimerView: View {
             
             // Snackbar overlay
             SnackbarView(
-                message: "Los cambios se aplicarán en la siguiente sesión",
+                message: "config_change_next_session".localized,
                 isVisible: viewModel.showConfigUpdateMessage,
                 onDismiss: viewModel.dismissConfigMessage
             )

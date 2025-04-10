@@ -1,0 +1,96 @@
+/* General */
+"app_name" = "Pomodoro";
+
+/* Timer */
+"timer" = "Timer";
+"work_time" = "Work time";
+"short_break" = "Short break";
+"long_break" = "Long break";
+"start" = "Start";
+"pause" = "Pause";
+"reset" = "Reset";
+"completed_sessions" = "Completed sessions: %d";
+"config_change_next_session" = "Changes will be applied in the next session";
+
+/* History */
+"history" = "History";
+"today" = "Today";
+"yesterday" = "Yesterday";
+"this_week" = "This Week";
+"this_month" = "This Month";
+"no_data" = "No data to display";
+"complete_sessions_message" = "Complete some Pomodoro sessions to start seeing your statistics.";
+"sessions" = "Sessions";
+"calendar" = "Calendar";
+"select_date" = "Select date";
+"close" = "Close";
+"delete_all" = "Delete all history";
+"delete_older_than_30_days" = "Delete data older than 30 days";
+"delete_confirmation" = "This action cannot be undone";
+"delete" = "Delete";
+"cancel" = "Cancel";
+"no_sessions_for_day" = "No sessions for this day";
+"view_today" = "View today";
+"select_date_menu" = "Select date";
+"delete_older_than_30" = "Delete data older than 30 days";
+"cannot_be_undone" = "This action cannot be undone.";
+"pomodoro_session" = "Pomodoro Session";
+"break_session" = "Break";
+"most_productive_time" = "Most productive time: %@";
+"no_completed_sessions" = "No completed sessions on this day";
+
+/* Settings */
+"settings" = "Settings";
+"timer_duration" = "Timer Duration";
+"sessions_count" = "Sessions until long break: %d";
+"notifications" = "Notifications";
+"enable_sounds" = "Enable sounds";
+"enable_notifications" = "Enable notifications";
+"auto_start" = "Auto-start";
+"auto_start_breaks" = "Auto-start breaks";
+"auto_start_pomodoros" = "Auto-start pomodoros";
+"appearance" = "Appearance";
+"theme" = "Theme";
+"timer_colors" = "Timer colors";
+"work" = "Work";
+"break" = "Break";
+"info" = "Information";
+"version" = "Version";
+"other_options" = "Other options";
+"restore_defaults" = "Restore default settings";
+"restore_confirmation" = "Are you sure you want to restore all settings to default values?";
+"restore" = "Restore";
+
+/* Cloud Sync */
+"sync" = "Synchronization";
+"sync_with_icloud" = "Sync with iCloud";
+"last_sync" = "Last sync";
+"sync_now" = "Sync now";
+"never" = "Never";
+"cloud_sync_not_enabled" = "iCloud sync is not enabled";
+
+/* Stats */
+"stats" = "Statistics";
+"total_sessions" = "Total sessions";
+"total_time" = "Total time";
+"most_productive_day" = "Most productive day";
+"minutes" = "minutes";
+"time_of_day" = "Time of day";
+"morning" = "Morning";
+"afternoon" = "Afternoon";
+"evening" = "Evening";
+"night" = "Night";
+"day_distribution" = "Day distribution";
+"weekday_distribution" = "Weekly distribution";
+"monthly_trend" = "Monthly trend";
+
+/* Themes */
+"light" = "Light";
+"dark" = "Dark";
+"system" = "System";
+
+/* Chart */
+"chart_ios16_required" = "Charts available in iOS 16 or later";
+"most_productive_day_message" = "Your most productive day is %@ with %d completed sessions.";
+"no_productivity_data" = "There is not enough data to determine your most productive day yet.";
+"day" = "Day"; 

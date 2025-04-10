@@ -8,7 +8,19 @@ struct CalendarView: View {
     @State private var selectedMonth = Date()
 
     private let calendar = Calendar.current
-    private let daysOfWeek = ["L", "M", "X", "J", "V", "S", "D"]
+    private var daysOfWeek: [String] {
+        let formatter = DateFormatter()
+        formatter.locale = Locale.current
+        var shortWeekdaySymbols = formatter.veryShortWeekdaySymbols ?? ["L", "M", "X", "J", "V", "S", "D"]
+        
+        // Reordenar para que la semana comience con lunes (depende del locale)
+        if calendar.firstWeekday == 1 { // Si la semana comienza en domingo (US)
+            let sunday = shortWeekdaySymbols.remove(at: 0)
+            shortWeekdaySymbols.append(sunday)
+        }
+        
+        return shortWeekdaySymbols
+    }
 
     var body: some View {
         NavigationView {
@@ -93,17 +105,17 @@ struct CalendarView: View {
                     // Eliminamos la sección de atajos y simplemente agregamos un padding inferior
                     .padding(.bottom, 16)
             }
-            .navigationTitle("Seleccionar fecha")
+            .navigationTitle("select_date".localized)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Cerrar") {
+                    Button("close".localized) {
                         dismiss()
                     }
                 }
 
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Hoy") {
+                    Button("today".localized) {
                         selectedDate = Date()
                         selectedMonth = Date()
                         viewModel.selectSpecificDate(Date())
@@ -121,7 +133,7 @@ struct CalendarView: View {
     private func monthYearString(from date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMMM yyyy"
-        formatter.locale = Locale(identifier: "es_ES")
+        formatter.locale = Locale.current
         return formatter.string(from: date).capitalized
     }
 
@@ -143,15 +155,16 @@ struct CalendarView: View {
         // Determine weekday of first day (1 = Sunday, 2 = Monday, etc.)
         let firstWeekday = calendar.component(.weekday, from: startOfMonth)
 
-        // In Spain/ES locale, Monday is the first day (index 0), Sunday is the last (index 6)
-        // Convert from calendar weekday (1 = Sunday) to our array index (0 = Monday)
-        let esWeekdayOffset = (firstWeekday + 5) % 7
+        // Adjust based on the current calendar's first weekday setting
+        // We're converting from calendar weekday (1 = Sunday) to our array index (0 = first day of week)
+        // For example, if the week starts with Monday, we need to shift Sunday to the end
+        let weekdayOffset = (firstWeekday - calendar.firstWeekday + 7) % 7
 
         // Generate array of dates with unique IDs
         var days: [DayItem] = []
 
         // Pad beginning with nil values (empty cells)
-        for i in 0..<esWeekdayOffset {
+        for i in 0..<weekdayOffset {
             days.append(DayItem(id: -i - 1, date: nil))  // Negative IDs for padding at beginning
         }
 

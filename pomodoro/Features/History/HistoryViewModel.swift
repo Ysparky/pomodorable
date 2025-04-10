@@ -14,24 +14,35 @@ class HistoryViewModel: ObservableObject {
     @Published var isCustomDateSelected: Bool = false
     @Published var dateTitle: String = "Hoy"
     
-    // Propiedades para sincronización con iCloud
+    // Properties for iCloud sync
     @Published var isCloudSyncEnabled: Bool = false
     @Published var isSyncing: Bool = false
     @Published var lastSyncDate: Date?
     @Published var syncError: String?
     
     enum Timeframe: String, CaseIterable, Identifiable {
-        case daily = "Hoy"
-        case weekly = "Esta Semana"
-        case monthly = "Este Mes"
+        case daily
+        case weekly
+        case monthly
         
         var id: String { self.rawValue }
+        
+        var localizedName: String {
+            switch self {
+            case .daily:
+                return "today".localized
+            case .weekly:
+                return "this_week".localized
+            case .monthly:
+                return "this_month".localized
+            }
+        }
     }
     
     private var cancellables = Set<AnyCancellable>()
     
     init() {
-        // Cargar estado de sincronización
+        // Load sync status
         isCloudSyncEnabled = HistoryService.shared.isCloudSyncEnabled()
         
         // Initial load
@@ -61,7 +72,7 @@ class HistoryViewModel: ObservableObject {
             }
             .store(in: &cancellables)
         
-        // Observador para cuando se completa una sincronización con iCloud
+        // Observer for when iCloud sync is completed
         NotificationCenter.default.publisher(for: CloudKitSyncService.cloudSyncCompletedNotification)
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
@@ -102,7 +113,7 @@ class HistoryViewModel: ObservableObject {
     
     func syncWithCloud() {
         guard isCloudSyncEnabled else {
-            syncError = "La sincronización con iCloud no está habilitada"
+            syncError = "cloud_sync_not_enabled".localized
             return
         }
         
@@ -128,19 +139,19 @@ class HistoryViewModel: ObservableObject {
             guard let self = self else { return }
             
             if self.isCustomDateSelected {
-                // Si hay una fecha específica seleccionada, cargar los datos para esa fecha
+                // If there is a specific date selected, load data for that date
                 self.loadHistoryForSelectedDate()
             } else {
-                // De lo contrario, cargar los datos para el timeframe seleccionado
+                // Otherwise, load data for the selected timeframe
                 self.dailySessions = HistoryService.shared.getSessionsForCurrentDay()
                 self.weeklySessions = HistoryService.shared.getSessionsForCurrentWeek()
                 self.monthlySessions = HistoryService.shared.getSessionsForCurrentMonth()
                 self.stats = HistoryService.shared.getStats()
                 
-                // Actualizar la fecha de última sincronización
+                // Update last sync date
                 self.lastSyncDate = self.stats.lastSyncedWithCloud
                 
-                // Actualizar el título de la fecha
+                // Update date title
                 self.updateDateTitle()
             }
             
@@ -157,13 +168,13 @@ class HistoryViewModel: ObservableObject {
         self.selectedDate = date
         self.isCustomDateSelected = true
         
-        // Cargar los datos únicamente para la fecha seleccionada
+        // Load data only for the selected date
         self.dailySessions = HistoryService.shared.getSessionsForDay(date)
         
-        // Actualizar el título de la fecha
+        // Update date title
         updateDateTitle()
         
-        // Notificar a la UI
+        // Notify the UI
         self.objectWillChange.send()
     }
     
@@ -222,7 +233,7 @@ class HistoryViewModel: ObservableObject {
                 }
             }
         } else {
-            // Si no hay fecha específica, usar la fecha actual
+            // If there is no specific date, use the current date
             dailySessions = HistoryService.shared.getSessionsForCurrentDay()
             weeklySessions = HistoryService.shared.getSessionsForCurrentWeek()
             monthlySessions = HistoryService.shared.getSessionsForCurrentMonth()
@@ -231,14 +242,14 @@ class HistoryViewModel: ObservableObject {
     
     private func updateDateTitle() {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "es_ES")
+        formatter.locale = Locale.current
         
         let calendar = Calendar.current
         
         if calendar.isDateInToday(selectedDate) {
-            dateTitle = "Hoy"
+            dateTitle = "today".localized
         } else if calendar.isDateInYesterday(selectedDate) {
-            dateTitle = "Ayer"
+            dateTitle = "yesterday".localized
         } else {
             formatter.dateStyle = .medium
             formatter.timeStyle = .none
@@ -261,11 +272,11 @@ class HistoryViewModel: ObservableObject {
     
     var lastSyncFormatted: String {
         guard let lastSync = lastSyncDate else {
-            return "Nunca"
+            return "never".localized
         }
         
         let formatter = RelativeDateTimeFormatter()
-        formatter.locale = Locale(identifier: "es_ES")
+        formatter.locale = Locale.current
         formatter.unitsStyle = .full
         return formatter.localizedString(for: lastSync, relativeTo: Date())
     }
@@ -323,18 +334,22 @@ class HistoryViewModel: ObservableObject {
     
     // MARK: - Chart Data Helpers
     
-    // Devuelve estadísticas de productividad por día de la semana (para identificar patrones semanales)
+    // Returns productivity statistics by day of the week (to identify weekly patterns)
     var productivityByDayOfWeek: [String: (sessions: Int, minutes: Int)] {
         let completedSessions = monthlySessions.filter { $0.isCompleted }
         let calendar = Calendar.current
+        let formatter = DateFormatter()
+        formatter.locale = Locale.current
         
-        // Inicializando con los días de la semana para asegurar que todos estén incluidos
-        var result: [String: (sessions: Int, minutes: Int)] = [
-            "Lun": (0, 0), "Mar": (0, 0), "Mié": (0, 0), "Jue": (0, 0),
-            "Vie": (0, 0), "Sáb": (0, 0), "Dom": (0, 0)
-        ]
+        // Initialize dictionary with all days of the week
+        var result: [String: (sessions: Int, minutes: Int)] = [:]
         
-        // Agrupando por día de la semana
+        // Use shortWeekdaySymbols to ensure all days are included
+        for (index, symbol) in formatter.shortWeekdaySymbols.enumerated() {
+            result[symbol] = (0, 0)
+        }
+        
+        // Grouping by day of the week
         for session in completedSessions {
             let weekday = calendar.component(.weekday, from: session.startTime)
             let dayName = getDayOfWeekName(weekday: weekday)
@@ -350,7 +365,7 @@ class HistoryViewModel: ObservableObject {
         return result
     }
     
-    // Devuelve la duración promedio de las sesiones por día
+    // Returns the average session duration by day
     var averageSessionDurationByDay: [String: Double] {
         let sessionsByDay = Dictionary(grouping: sessionsForSelectedTimeframe.filter { $0.isCompleted }) { $0.dayString }
         
@@ -360,7 +375,7 @@ class HistoryViewModel: ObservableObject {
         }
     }
     
-    // Devuelve el número de sesiones completadas por día para un rango de fechas
+    // Returns the number of completed sessions by day for a range of dates
     func completedSessionsCountForRange(_ dates: [Date]) -> [Int] {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
@@ -377,43 +392,43 @@ class HistoryViewModel: ObservableObject {
     // MARK: - Helper Functions
     
     private func getDayOfWeekName(weekday: Int) -> String {
-        // weekday: 1 = Domingo, 2 = Lunes, ..., 7 = Sábado
-        switch weekday {
-        case 1: return "Dom"
-        case 2: return "Lun"
-        case 3: return "Mar"
-        case 4: return "Mié"
-        case 5: return "Jue"
-        case 6: return "Vie"
-        case 7: return "Sáb"
-        default: return ""
+        let formatter = DateFormatter()
+        formatter.locale = Locale.current
+        
+        // Adjust index (weekday of Calendar: 1=Sunday, 2=Monday, etc.)
+        // For DateFormatter.shortWeekdaySymbols: 0=Sunday, 1=Monday, etc. (in US locale)
+        let index = weekday - 1
+        
+        if index >= 0 && index < formatter.shortWeekdaySymbols.count {
+            return formatter.shortWeekdaySymbols[index]
         }
+        return ""
     }
     
-    // Obtiene el nombre completo del día en español
+    // Gets the full day name according to the current locale
     private func getFullDayOfWeekName(shortName: String) -> String {
-        switch shortName {
-        case "Lun": return "Lunes"
-        case "Mar": return "Martes"
-        case "Mié": return "Miércoles"
-        case "Jue": return "Jueves"
-        case "Vie": return "Viernes"
-        case "Sáb": return "Sábado"
-        case "Dom": return "Domingo"
-        default: return shortName
+        let formatter = DateFormatter()
+        formatter.locale = Locale.current
+        
+        // Try to find the index of the short name in shortWeekdaySymbols
+        if let index = formatter.shortWeekdaySymbols.firstIndex(of: shortName),
+           index < formatter.weekdaySymbols.count {
+            return formatter.weekdaySymbols[index]
         }
+        
+        return shortName
     }
     
-    // Devuelve el día de la semana más productivo (con mayor número de sesiones completadas)
+    // Returns the most productive day of the week (with the most number of completed sessions)
     func getMostProductiveDayOfWeek() -> (String, Int)? {
         let completedSessions = weeklySessions.filter { $0.isCompleted }
         
-        // Si no hay sesiones completadas, devuelve nil
+        // If there are no completed sessions, return nil
         if completedSessions.isEmpty {
             return nil
         }
         
-        // Agrupar por día de la semana
+        // Group by day of the week
         let calendar = Calendar.current
         var sessionsByDayOfWeek: [String: Int] = [:]
         
@@ -424,7 +439,7 @@ class HistoryViewModel: ObservableObject {
             sessionsByDayOfWeek[dayName, default: 0] += 1
         }
         
-        // Encontrar el día con más sesiones
+        // Find the day with the most sessions
         if let mostProductiveDay = sessionsByDayOfWeek.max(by: { $0.value < $1.value }) {
             let fullDayName = getFullDayOfWeekName(shortName: mostProductiveDay.key)
             return (fullDayName, mostProductiveDay.value)
@@ -433,16 +448,16 @@ class HistoryViewModel: ObservableObject {
         return nil
     }
     
-    // Devuelve la fecha más productiva del mes (con mayor número de sesiones completadas)
+    // Returns the most productive date of the month (with the most number of completed sessions)
     func getMostProductiveDateOfMonth() -> (Date, Int)? {
         let completedSessions = monthlySessions.filter { $0.isCompleted }
         
-        // Si no hay sesiones completadas, devuelve nil
+        // If there are no completed sessions, return nil
         if completedSessions.isEmpty {
             return nil
         }
         
-        // Agrupar por fecha (día específico)
+        // Group by date (specific day)
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
         
@@ -454,13 +469,13 @@ class HistoryViewModel: ObservableObject {
             if let existingData = sessionsByDate[dateString] {
                 sessionsByDate[dateString] = (existingData.date, existingData.count + 1)
             } else {
-                // Normalizar la fecha para eliminar la hora
+                // Normalize the date to remove the time
                 let normalizedDate = Calendar.current.startOfDay(for: session.startTime)
                 sessionsByDate[dateString] = (normalizedDate, 1)
             }
         }
         
-        // Encontrar la fecha con más sesiones
+        // Find the date with the most sessions
         if let mostProductiveDate = sessionsByDate.max(by: { $0.value.count < $1.value.count }) {
             return (mostProductiveDate.value.date, mostProductiveDate.value.count)
         }
@@ -484,14 +499,14 @@ class HistoryViewModel: ObservableObject {
         return dailySessions
     }
     
-    // Devuelve el número de sesiones completadas para el día seleccionado
+    // Returns the number of completed sessions for the selected day
     var selectedDaySessionsCount: Int {
         return dailySessions.filter { $0.isCompleted }.count
     }
     
     // MARK: - Helper Functions
     
-    // Devuelve la hora más productiva del día seleccionado
+    // Returns the most productive time of the selected day
     var mostProductiveTimeOfSelectedDay: String? {
         let completedSessions = dailySessions.filter { $0.isCompleted }
         guard !completedSessions.isEmpty else { return nil }

@@ -6,20 +6,33 @@ struct ProductivityChartsView: View {
     @State private var selectedChartType: ChartType = .daily
     
     enum ChartType: String, CaseIterable, Identifiable {
-        case daily = "Por Día"
-        case hourly = "Por Hora"
-        case trend = "Tendencia"
-        case weekly = "Semanal"
+        case daily
+        case hourly
+        case trend
+        case weekly
         
         var id: String { self.rawValue }
+        
+        var localizedName: String {
+            switch self {
+            case .daily:
+                return "day_distribution".localized
+            case .hourly:
+                return "time_of_day".localized
+            case .trend:
+                return "monthly_trend".localized
+            case .weekly:
+                return "weekday_distribution".localized
+            }
+        }
     }
     
     var body: some View {
         VStack(spacing: 8) {
             // Chart type selector
-            Picker("Tipo de Gráfico", selection: $selectedChartType) {
+            Picker("stats".localized, selection: $selectedChartType) {
                 ForEach(ChartType.allCases) { type in
-                    Text(type.rawValue).tag(type)
+                    Text(type.localizedName).tag(type)
                 }
             }
             .pickerStyle(SegmentedPickerStyle())
@@ -66,14 +79,14 @@ struct DailySessionsChart: View {
     private func formatDayName(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "EE"
-        formatter.locale = Locale(identifier: "es_ES")
+        formatter.locale = Locale.current
         return formatter.string(from: date)
     }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("Sesiones Completadas por Día")
+                Text("sessions".localized)
                     .font(.headline)
                 Spacer()
             }
@@ -84,8 +97,8 @@ struct DailySessionsChart: View {
             if #available(iOS 16.0, *) {
                 Chart(sessionsPerDay) { dayData in
                     BarMark(
-                        x: .value("Día", dayData.day),
-                        y: .value("Sesiones", dayData.completedSessions)
+                        x: .value("day".localized, dayData.day),
+                        y: .value("sessions".localized, dayData.completedSessions)
                     )
                     .foregroundStyle(Color.green.gradient)
                 }
@@ -97,7 +110,7 @@ struct DailySessionsChart: View {
                 }
             } else {
                 // Fallback para iOS 15 o anterior
-                Text("Gráficos disponibles en iOS 16 o superior")
+                Text("chart_ios16_required".localized)
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .center)
                     .background(Color(.secondarySystemGroupedBackground))
@@ -118,10 +131,10 @@ struct HourlyDistributionChart: View {
         let groupedByTime = Dictionary(grouping: completedSessions) { $0.timeOfDayString }
         
         let result = [
-            TimeOfDayData(timeOfDay: "Morning", label: "Mañana", count: groupedByTime["Morning"]?.count ?? 0),
-            TimeOfDayData(timeOfDay: "Afternoon", label: "Tarde", count: groupedByTime["Afternoon"]?.count ?? 0),
-            TimeOfDayData(timeOfDay: "Evening", label: "Atardecer", count: groupedByTime["Evening"]?.count ?? 0),
-            TimeOfDayData(timeOfDay: "Night", label: "Noche", count: groupedByTime["Night"]?.count ?? 0)
+            TimeOfDayData(timeOfDay: "morning", label: "morning".localized, count: groupedByTime["Morning"]?.count ?? 0),
+            TimeOfDayData(timeOfDay: "afternoon", label: "afternoon".localized, count: groupedByTime["Afternoon"]?.count ?? 0),
+            TimeOfDayData(timeOfDay: "evening", label: "evening".localized, count: groupedByTime["Evening"]?.count ?? 0),
+            TimeOfDayData(timeOfDay: "night", label: "night".localized, count: groupedByTime["Night"]?.count ?? 0)
         ]
         
         return result.filter { $0.count > 0 }
@@ -130,7 +143,7 @@ struct HourlyDistributionChart: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("Distribución por Hora del Día")
+                Text("time_of_day".localized)
                     .font(.headline)
                 Spacer()
             }
@@ -141,11 +154,11 @@ struct HourlyDistributionChart: View {
             if #available(iOS 16.0, *) {
                 Chart(sessionsByTimeOfDay) { timeData in
                     SectorMark(
-                        angle: .value("Sesiones", timeData.count),
+                        angle: .value("sessions".localized, timeData.count),
                         innerRadius: .ratio(0.5),
                         angularInset: 1
                     )
-                    .foregroundStyle(by: .value("Hora", timeData.label))
+                    .foregroundStyle(by: .value("time_of_day".localized, timeData.label))
                     .annotation(position: .overlay) {
                         if timeData.count > 0 {
                             Text("\(timeData.count)")
@@ -160,7 +173,7 @@ struct HourlyDistributionChart: View {
                 .background(Color(.secondarySystemGroupedBackground))
             } else {
                 // Fallback para iOS 15 o anterior
-                Text("Gráficos disponibles en iOS 16 o superior")
+                Text("chart_ios16_required".localized)
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .center)
                     .background(Color(.secondarySystemGroupedBackground))
@@ -209,7 +222,7 @@ struct ProductivityTrendChart: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("Tendencia de Productividad")
+                Text("monthly_trend".localized)
                     .font(.headline)
                 Spacer()
             }
@@ -220,15 +233,15 @@ struct ProductivityTrendChart: View {
             if #available(iOS 16.0, *) {
                 Chart(productivityTrend) { dataPoint in
                     LineMark(
-                        x: .value("Día", dataPoint.day),
-                        y: .value("Minutos", dataPoint.totalMinutes)
+                        x: .value("day".localized, dataPoint.day),
+                        y: .value("minutes".localized, dataPoint.totalMinutes)
                     )
                     .foregroundStyle(Color.blue.gradient)
                     .symbol(Circle().strokeBorder(lineWidth: 2))
                     
                     PointMark(
-                        x: .value("Día", dataPoint.day),
-                        y: .value("Minutos", dataPoint.totalMinutes)
+                        x: .value("day".localized, dataPoint.day),
+                        y: .value("minutes".localized, dataPoint.totalMinutes)
                     )
                     .foregroundStyle(Color.blue)
                 }
@@ -243,7 +256,7 @@ struct ProductivityTrendChart: View {
                 }
             } else {
                 // Fallback para iOS 15 o anterior
-                Text("Gráficos disponibles en iOS 16 o superior")
+                Text("chart_ios16_required".localized)
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .center)
                     .background(Color(.secondarySystemGroupedBackground))
@@ -263,12 +276,36 @@ struct WeekdayProductivityChart: View {
         // Obtener los datos de productividad por día de la semana
         let productivityData = viewModel.productivityByDayOfWeek
         
-        // Orden de días de la semana (lunes a domingo)
-        let weekdayOrder = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
+        // Usar DateFormatter para obtener los días de la semana según el locale actual
+        let formatter = DateFormatter()
+        formatter.locale = Locale.current
+        
+        // Ordenar según first weekday del calendario
+        let calendar = Calendar.current
+        
+        // Asegurarse de que tenemos símbolos de días de la semana (no opcionales)
+        guard let weekdaySymbols = formatter.shortWeekdaySymbols else {
+            // Fallback a los días predeterminados si no hay símbolos disponibles
+            return []
+        }
+        
+        // Crear una copia mutable del array de símbolos
+        var orderedSymbols = weekdaySymbols
+        
+        // Si la semana comienza en domingo (US) pero queremos mostrar lunes primero
+        // O viceversa según configuración del sistema
+        let firstWeekdayIndex = (calendar.firstWeekday - 1)  // 0-based
+        if firstWeekdayIndex > 0 && firstWeekdayIndex < orderedSymbols.count {
+            // Reordenar los días comenzando por el primer día de la semana según el calendario
+            let firstPart = Array(orderedSymbols.prefix(firstWeekdayIndex))
+            orderedSymbols.removeFirst(firstWeekdayIndex)
+            orderedSymbols.append(contentsOf: firstPart)
+        }
         
         // Convertir a arreglo para el gráfico
-        return weekdayOrder.map { day in
-            let data = productivityData[day]!
+        return orderedSymbols.map { day in
+            // Buscar los datos para este día - valor predeterminado si no existe
+            let data = productivityData[day] ?? (sessions: 0, minutes: 0)
             return WeekdayProductivityData(
                 day: day,
                 sessions: data.sessions,
@@ -280,7 +317,7 @@ struct WeekdayProductivityChart: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("Productividad por Día de la Semana")
+                Text("weekday_distribution".localized)
                     .font(.headline)
                 Spacer()
             }
@@ -292,16 +329,16 @@ struct WeekdayProductivityChart: View {
                 Chart {
                     ForEach(weekdayData) { item in
                         BarMark(
-                            x: .value("Día", item.day),
-                            y: .value("Sesiones", item.sessions)
+                            x: .value("day".localized, item.day),
+                            y: .value("sessions".localized, item.sessions)
                         )
                         .foregroundStyle(Color.green.gradient)
                     }
                     
                     ForEach(weekdayData) { item in
                         LineMark(
-                            x: .value("Día", item.day),
-                            y: .value("Minutos", item.minutes)
+                            x: .value("day".localized, item.day),
+                            y: .value("minutes".localized, item.minutes)
                         )
                         .foregroundStyle(Color.blue)
                         .lineStyle(StrokeStyle(lineWidth: 3))
@@ -319,13 +356,13 @@ struct WeekdayProductivityChart: View {
                     AxisMarks(position: .leading)
                 }
                 .chartForegroundStyleScale([
-                    "Sesiones": Color.green,
-                    "Minutos": Color.blue
+                    "sessions".localized: Color.green,
+                    "minutes".localized: Color.blue
                 ])
                 .chartLegend(position: .bottom, alignment: .center)
             } else {
                 // Fallback para iOS 15 o anterior
-                Text("Gráficos disponibles en iOS 16 o superior")
+                Text("chart_ios16_required".localized)
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .center)
                     .background(Color(.secondarySystemGroupedBackground))
@@ -333,7 +370,7 @@ struct WeekdayProductivityChart: View {
             
             // Análisis de productividad
             VStack(alignment: .leading, spacing: 8) {
-                Text("Análisis:")
+                Text("stats".localized + ":")
                     .font(.subheadline)
                     .fontWeight(.bold)
                 
@@ -353,22 +390,33 @@ struct WeekdayProductivityChart: View {
         let data = weekdayData
         
         if let mostSessions = data.max(by: { $0.sessions < $1.sessions }) {
-            return "Tu día más productivo en sesiones es \(translateDayName(mostSessions.day)) con \(mostSessions.sessions) sesiones completadas."
+            let formatter = DateFormatter()
+            formatter.locale = Locale.current
+            
+            // Obtenemos los arrays de símbolos (no opcionales)
+            guard let shortSymbols = formatter.shortWeekdaySymbols,
+                  let fullSymbols = formatter.weekdaySymbols else {
+                // Si no podemos obtener los símbolos, usamos directamente el día abreviado
+                return String(format: "most_productive_day_message".localized, 
+                              mostSessions.day, 
+                              mostSessions.sessions)
+            }
+            
+            // Intentar encontrar el índice del día abreviado
+            if let dayIndex = shortSymbols.firstIndex(of: mostSessions.day),
+               dayIndex < fullSymbols.count {
+                let fullDayName = fullSymbols[dayIndex]
+                return String(format: "most_productive_day_message".localized, 
+                              fullDayName, 
+                              mostSessions.sessions)
+            } else {
+                // Si no se encuentra, usar el nombre abreviado directamente
+                return String(format: "most_productive_day_message".localized, 
+                              mostSessions.day, 
+                              mostSessions.sessions)
+            }
         } else {
-            return "Aún no hay suficientes datos para determinar tu día más productivo."
-        }
-    }
-    
-    private func translateDayName(_ shortName: String) -> String {
-        switch shortName {
-        case "Lun": return "Lunes"
-        case "Mar": return "Martes"
-        case "Mié": return "Miércoles"
-        case "Jue": return "Jueves"
-        case "Vie": return "Viernes"
-        case "Sáb": return "Sábado"
-        case "Dom": return "Domingo"
-        default: return shortName
+            return "no_productivity_data".localized
         }
     }
 }

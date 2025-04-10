@@ -15,6 +15,7 @@ struct pomodoroApp: App {
     
     init() {
         registerBackgroundTasks()
+        configureLocalization()
     }
     
     var body: some Scene {
@@ -24,6 +25,13 @@ struct pomodoroApp: App {
                 .environmentObject(themeService)
                 .environmentObject(timerViewModel)
         }
+    }
+    
+    private func configureLocalization() {
+        // Asegurarse de que el Bundle principal pueda encontrar los archivos de localización
+        Bundle.main.path(forResource: "en", ofType: "lproj")
+        Bundle.main.path(forResource: "es", ofType: "lproj")
+        Bundle.main.path(forResource: "pt", ofType: "lproj")
     }
     
     private func registerBackgroundTasks() {

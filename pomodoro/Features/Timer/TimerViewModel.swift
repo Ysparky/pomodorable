@@ -203,7 +203,7 @@ class TimerViewModel: ObservableObject {
     }
     
     var modeText: String {
-        isWorkMode ? "Focus Time" : "Break Time"
+        isWorkMode ? "work".localized : "break".localized
     }
     
     func toggleTimer() {

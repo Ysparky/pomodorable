@@ -17,10 +17,10 @@ struct SettingsView: View {
     
     var body: some View {
         Form {
-            Section(header: Text("Duración del Temporizador")) {
+            Section(header: Text("timer_duration".localized)) {
                 VStack(alignment: .leading) {
                     HStack {
-                        Text("Tiempo de trabajo")
+                        Text("work_time".localized)
                         Spacer()
                         Text("\(Int(workTime)) min")
                             .foregroundColor(.secondary)
@@ -37,7 +37,7 @@ struct SettingsView: View {
                 
                 VStack(alignment: .leading) {
                     HStack {
-                        Text("Descanso corto")
+                        Text("short_break".localized)
                         Spacer()
                         Text("\(Int(shortBreakTime)) min")
                             .foregroundColor(.secondary)
@@ -54,7 +54,7 @@ struct SettingsView: View {
                 
                 VStack(alignment: .leading) {
                     HStack {
-                        Text("Descanso largo")
+                        Text("long_break".localized)
                         Spacer()
                         Text("\(Int(longBreakTime)) min")
                             .foregroundColor(.secondary)
@@ -70,8 +70,8 @@ struct SettingsView: View {
                 }
             }
             
-            Section(header: Text("Sesiones")) {
-                Stepper("Sesiones hasta descanso largo: \(sessionsUntilLongBreak)",
+            Section(header: Text("sessions".localized)) {
+                Stepper("sessions_count".localizedWithArg(sessionsUntilLongBreak),
                         value: Binding(
                             get: { sessionsUntilLongBreak },
                             set: { newValue in
@@ -83,25 +83,25 @@ struct SettingsView: View {
                         in: 1...10)
             }
             
-            Section(header: Text("Notificaciones")) {
-                Toggle("Activar sonidos", isOn: $soundEnabled)
-                Toggle("Activar notificaciones", isOn: $notificationsEnabled)
+            Section(header: Text("notifications".localized)) {
+                Toggle("enable_sounds".localized, isOn: $soundEnabled)
+                Toggle("enable_notifications".localized, isOn: $notificationsEnabled)
             }
             
-            Section(header: Text("Auto-inicio")) {
-                Toggle("Iniciar descansos automáticamente", isOn: $autoStartBreaks)
-                Toggle("Iniciar pomodoros automáticamente", isOn: $autoStartPomodoros)
+            Section(header: Text("auto_start".localized)) {
+                Toggle("auto_start_breaks".localized, isOn: $autoStartBreaks)
+                Toggle("auto_start_pomodoros".localized, isOn: $autoStartPomodoros)
             }
             
             // Sección de sincronización con iCloud
-            Section(header: Text("Sincronización")) {
-                Toggle("Sincronizar con iCloud", isOn: $historyViewModel.isCloudSyncEnabled)
+            Section(header: Text("sync".localized)) {
+                Toggle("sync_with_icloud".localized, isOn: $historyViewModel.isCloudSyncEnabled)
                     .onChange(of: historyViewModel.isCloudSyncEnabled) { oldValue, newValue in
                         historyViewModel.toggleCloudSync()
                     }
                 
                 HStack {
-                    Text("Última sincronización")
+                    Text("last_sync".localized)
                     Spacer()
                     Text(historyViewModel.lastSyncFormatted)
                         .foregroundColor(.secondary)
@@ -111,7 +111,7 @@ struct SettingsView: View {
                     historyViewModel.syncWithCloud()
                 }) {
                     HStack {
-                        Text("Sincronizar ahora")
+                        Text("sync_now".localized)
                         Spacer()
                         if historyViewModel.isSyncing {
                             ProgressView()
@@ -130,8 +130,8 @@ struct SettingsView: View {
                 }
             }
             
-            Section(header: Text("Apariencia")) {
-                Picker("Tema", selection: $viewModel.themeService.currentTheme) {
+            Section(header: Text("appearance".localized)) {
+                Picker("theme".localized, selection: $viewModel.themeService.currentTheme) {
                     ForEach(AppTheme.allCases) { theme in
                         Text(theme.displayName).tag(theme)
                     }
@@ -139,12 +139,12 @@ struct SettingsView: View {
                 .pickerStyle(SegmentedPickerStyle())
                 
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Colores del temporizador")
+                    Text("timer_colors".localized)
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                     
                     HStack {
-                        Text("Trabajo")
+                        Text("work".localized)
                         Spacer()
                         ColorPicker("", selection: Binding(
                             get: { viewModel.colorService.colors.workColor },
@@ -157,7 +157,7 @@ struct SettingsView: View {
                     }
                     
                     HStack {
-                        Text("Descanso")
+                        Text("break".localized)
                         Spacer()
                         ColorPicker("", selection: Binding(
                             get: { viewModel.colorService.colors.breakColor },
@@ -171,9 +171,9 @@ struct SettingsView: View {
                 }
             }
             
-            Section(header: Text("Información")) {
+            Section(header: Text("info".localized)) {
                 HStack {
-                    Text("Versión")
+                    Text("version".localized)
                     Spacer()
                     Text("1.0.0")
                         .foregroundColor(.secondary)
@@ -181,28 +181,28 @@ struct SettingsView: View {
             }
             
             // Restore Default Settings Section
-            Section(header: Text("Otras opciones")) {
+            Section(header: Text("other_options".localized)) {
                 Button(action: {
                     showResetConfirmAlert = true
                 }) {
                     HStack {
                         Image(systemName: "arrow.counterclockwise")
                             .foregroundColor(.red)
-                        Text("Restaurar configuración por defecto")
+                        Text("restore_defaults".localized)
                             .foregroundColor(.red)
                     }
                 }
             }
         }
-        .navigationTitle("Configuración")
+        .navigationTitle("settings".localized)
         .alert(isPresented: $showResetConfirmAlert) {
             Alert(
-                title: Text("Restaurar configuración"),
-                message: Text("¿Estás seguro de que deseas restaurar toda la configuración a los valores por defecto?"),
-                primaryButton: .destructive(Text("Restaurar")) {
+                title: Text("restore_defaults".localized),
+                message: Text("restore_confirmation".localized),
+                primaryButton: .destructive(Text("restore".localized)) {
                     resetToDefaultSettings()
                 },
-                secondaryButton: .cancel(Text("Cancelar"))
+                secondaryButton: .cancel(Text("cancel".localized))
             )
         }
     }

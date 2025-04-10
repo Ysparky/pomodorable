@@ -8,27 +8,27 @@ struct ContentView: View {
             // Timer Tab
             NavigationView {
                 TimerView()
-                    .navigationTitle("Pomodoro")
+                    .navigationTitle("app_name".localized)
             }
             .tabItem {
-                Label("Temporizador", systemImage: "timer")
+                Label("timer".localized, systemImage: "timer")
             }
             .tag(0)
             
             // History Tab
             HistoryView()
                 .tabItem {
-                    Label("Historial", systemImage: "chart.bar")
+                    Label("history".localized, systemImage: "chart.bar")
                 }
                 .tag(1)
             
             // Settings Tab
             NavigationView {
                 SettingsView()
-                    .navigationTitle("Ajustes")
+                    .navigationTitle("settings".localized)
             }
             .tabItem {
-                Label("Ajustes", systemImage: "gear")
+                Label("settings".localized, systemImage: "gear")
             }
             .tag(2)
         }

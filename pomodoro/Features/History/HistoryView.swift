@@ -96,14 +96,14 @@ struct HistoryView: View {
                                     .font(.system(size: 50))
                                     .foregroundColor(.secondary)
                                 
-                                Text("No hay sesiones para este día")
+                                Text("no_sessions_for_day".localized)
                                     .font(.headline)
                                     .foregroundColor(.secondary)
                                 
                                 Button(action: {
                                     viewModel.resetToCurrentDay()
                                 }) {
-                                    Label("Ver hoy", systemImage: "calendar.day.timeline.leading")
+                                    Label("view_today".localized, systemImage: "calendar.day.timeline.leading")
                                         .padding(.horizontal, 20)
                                         .padding(.vertical, 10)
                                 }
@@ -139,14 +139,14 @@ struct HistoryView: View {
                                     .font(.system(size: 50))
                                     .foregroundColor(.secondary)
                                 
-                                Text("No hay sesiones para este día")
+                                Text("no_sessions_for_day".localized)
                                     .font(.headline)
                                     .foregroundColor(.secondary)
                                 
                                 Button(action: {
                                     viewModel.resetToCurrentDay()
                                 }) {
-                                    Label("Ver hoy", systemImage: "calendar.day.timeline.leading")
+                                    Label("view_today".localized, systemImage: "calendar.day.timeline.leading")
                                         .padding(.horizontal, 20)
                                         .padding(.vertical, 10)
                                 }
@@ -171,7 +171,7 @@ struct HistoryView: View {
                     }
                 }
             }
-            .navigationTitle("Historial")
+            .navigationTitle("history".localized)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 16) {
@@ -188,13 +188,13 @@ struct HistoryView: View {
                             Button(action: {
                                 viewModel.resetToCurrentDay()
                             }) {
-                                Label("Ver hoy", systemImage: "calendar.day.timeline.leading")
+                                Label("view_today".localized, systemImage: "calendar.day.timeline.leading")
                             }
                             
                             Button(action: {
                                 showCalendar = true
                             }) {
-                                Label("Seleccionar fecha", systemImage: "calendar")
+                                Label("select_date_menu".localized, systemImage: "calendar")
                             }
                             
                             Divider()
@@ -202,13 +202,13 @@ struct HistoryView: View {
                             Button(role: .destructive, action: {
                                 showingActionSheet = true
                             }) {
-                                Label("Borrar todo el historial", systemImage: "trash")
+                                Label("delete_all".localized, systemImage: "trash")
                             }
                             
                             Button(action: {
                                 viewModel.clearHistoryOlderThan30Days()
                             }) {
-                                Label("Borrar anterior a 30 días", systemImage: "clock.arrow.circlepath")
+                                Label("delete_older_than_30".localized, systemImage: "clock.arrow.circlepath")
                             }
                         } label: {
                             Image(systemName: "ellipsis.circle")
@@ -231,13 +231,13 @@ struct HistoryView: View {
             .sheet(isPresented: $showCalendar) {
                 CalendarView(viewModel: viewModel)
             }
-            .alert("Borrar todo el historial", isPresented: $showingActionSheet) {
-                Button("Cancelar", role: .cancel) { }
-                Button("Borrar", role: .destructive) {
+            .alert("delete_all".localized, isPresented: $showingActionSheet) {
+                Button("cancel".localized, role: .cancel) { }
+                Button("delete".localized, role: .destructive) {
                     viewModel.clearAllHistory()
                 }
             } message: {
-                Text("Esta acción no se puede deshacer.")
+                Text("cannot_be_undone".localized)
             }
         }
         .onAppear {
@@ -266,9 +266,9 @@ struct HistoryView: View {
             if calendar.isDate(date, inSameDayAs: viewModel.selectedDate) {
                 // Si es la fecha específica seleccionada
                 if calendar.isDateInToday(date) {
-                    return "Hoy"
+                    return "today".localized
                 } else if calendar.isDateInYesterday(date) {
-                    return "Ayer"
+                    return "yesterday".localized
                 } else {
                     displayFormatter.dateFormat = "EEEE, d MMMM"
                     return displayFormatter.string(from: date).capitalized
@@ -285,9 +285,9 @@ struct HistoryView: View {
         case .daily:
             // Para el timeframe diario: Hoy, Ayer o fecha
             if Calendar.current.isDateInToday(date) {
-                return "Hoy"
+                return "today".localized
             } else if Calendar.current.isDateInYesterday(date) {
-                return "Ayer"
+                return "yesterday".localized
             } else {
                 displayFormatter.dateFormat = "EEEE, d MMM"
                 return displayFormatter.string(from: date)
@@ -296,9 +296,9 @@ struct HistoryView: View {
         case .weekly:
             // Para el timeframe semanal: Nombre del día o "Hoy"/"Ayer"
             if Calendar.current.isDateInToday(date) {
-                return "Hoy"
+                return "today".localized
             } else if Calendar.current.isDateInYesterday(date) {
-                return "Ayer"
+                return "yesterday".localized
             } else {
                 displayFormatter.dateFormat = "EEEE"
                 let dayName = displayFormatter.string(from: date).capitalized
@@ -320,9 +320,9 @@ struct HistoryView: View {
             let day = Calendar.current.component(.day, from: date)
             
             if Calendar.current.isDateInToday(date) {
-                return "Hoy (\(day))"
+                return "today".localized + " (\(day))"
             } else if Calendar.current.isDateInYesterday(date) {
-                return "Ayer (\(day))"
+                return "yesterday".localized + " (\(day))"
             } else {
                 displayFormatter.dateFormat = "d MMMM"
                 return displayFormatter.string(from: date)
@@ -340,7 +340,7 @@ struct SummaryCardView: View {
                 Spacer()
                 
                 StatView(
-                    title: "Sesiones",
+                    title: "sessions".localized,
                     value: "\(viewModel.totalSessionsForSelectedDay)",
                     icon: "timer",
                     color: .green
@@ -350,7 +350,7 @@ struct SummaryCardView: View {
                     .frame(height: 40)
                 
                 StatView(
-                    title: "Minutos",
+                    title: "minutes".localized,
                     value: "\(viewModel.totalMinutesForSelectedDay)",
                     icon: "clock",
                     color: .blue
@@ -371,7 +371,7 @@ struct SummaryCardView: View {
                         .foregroundColor(.yellow)
                         .font(.system(size: 14))
                     
-                    Text("Hora más productiva: \(translateTimeOfDay(productiveTime))")
+                    Text("most_productive_time".localizedWithArg(translateTimeOfDay(productiveTime)))
                         .font(.footnote)
                         .fontWeight(.medium)
                         .foregroundColor(.secondary)
@@ -384,7 +384,7 @@ struct SummaryCardView: View {
                         .foregroundColor(.secondary)
                         .font(.system(size: 14))
                     
-                    Text("No hay sesiones completadas en este día")
+                    Text("no_completed_sessions".localized)
                         .font(.footnote)
                         .fontWeight(.medium)
                         .foregroundColor(.secondary)
@@ -398,13 +398,13 @@ struct SummaryCardView: View {
     private func translateTimeOfDay(_ timeOfDay: String) -> String {
         switch timeOfDay {
         case "Morning":
-            return "Mañana"
+            return "morning".localized
         case "Afternoon":
-            return "Tarde"
+            return "afternoon".localized
         case "Evening":
-            return "Atardecer"
+            return "evening".localized
         case "Night":
-            return "Noche"
+            return "night".localized
         default:
             return timeOfDay
         }
@@ -459,7 +459,7 @@ struct SessionRowView: View {
             }
             
             VStack(alignment: .leading, spacing: 4) {
-                Text(session.isCompleted ? "Sesión Pomodoro" : "Descanso")
+                Text(session.isCompleted ? "pomodoro_session".localized : "break_session".localized)
                     .font(.subheadline)
                     .fontWeight(.semibold)
                 
